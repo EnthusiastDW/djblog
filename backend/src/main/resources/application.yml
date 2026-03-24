@@ -1,0 +1,20 @@
+server:
+  port: 8801
+spring:
+  profiles:
+    active: dev
+  application:
+    name: blog
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: AUTO
+
+springdoc:
+  packages-to-scan: site.dengwei.blog.controller
+  swagger-ui:
+    path: /swagger-ui.html
