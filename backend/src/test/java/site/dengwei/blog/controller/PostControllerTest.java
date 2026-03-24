@@ -15,7 +15,7 @@ import site.dengwei.blog.entity.Post;
 import site.dengwei.blog.enums.PostStatus;
 import site.dengwei.blog.exception.BusinessException;
 import site.dengwei.blog.service.PostService;
-import site.dengwei.common.beans.Response;
+import site.dengwei.blog.dto.Response;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;

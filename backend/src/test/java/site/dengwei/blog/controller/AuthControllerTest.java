@@ -21,7 +21,7 @@ import site.dengwei.blog.entity.User;
 import site.dengwei.blog.exception.BusinessException;
 import site.dengwei.blog.service.UserService;
 import site.dengwei.blog.util.JwtUtil;
-import site.dengwei.common.beans.Response;
+import site.dengwei.blog.dto.Response;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;

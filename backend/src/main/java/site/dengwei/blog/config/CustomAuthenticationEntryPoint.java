@@ -8,7 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
-import site.dengwei.common.beans.Response;
+import site.dengwei.blog.dto.Response;
 
 import java.io.IOException;
 

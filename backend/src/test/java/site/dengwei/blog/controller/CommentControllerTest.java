@@ -13,16 +13,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import site.dengwei.blog.dto.request.*;
 import site.dengwei.blog.entity.Comment;
 import site.dengwei.blog.enums.CommentStatus;
-import site.dengwei.blog.exception.BusinessException;
 import site.dengwei.blog.service.CommentService;
-import site.dengwei.common.beans.Response;
+import site.dengwei.blog.dto.Response;
 
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
 /**

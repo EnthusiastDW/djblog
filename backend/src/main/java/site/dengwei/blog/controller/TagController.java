@@ -9,7 +9,7 @@ import site.dengwei.blog.dto.request.UpdateTagRequest;
 import site.dengwei.blog.entity.Tag;
 import site.dengwei.blog.service.TagService;
 import site.dengwei.blog.util.LambdaQueryUtils;
-import site.dengwei.common.beans.Response;
+import site.dengwei.blog.dto.Response;
 
 /**
  * 标签控制器

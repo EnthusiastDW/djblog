@@ -9,7 +9,7 @@ import site.dengwei.blog.dto.request.UpdateCategoryRequest;
 import site.dengwei.blog.entity.Category;
 import site.dengwei.blog.service.CategoryService;
 import site.dengwei.blog.util.LambdaQueryUtils;
-import site.dengwei.common.beans.Response;
+import site.dengwei.blog.dto.Response;
 
 /**
  * 分类控制器

@@ -1,4 +1,4 @@
-package site.dengwei.common.beans;
+package site.dengwei.blog.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

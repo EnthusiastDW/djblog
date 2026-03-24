@@ -16,10 +16,9 @@ import site.dengwei.blog.dto.AuthResponse;
 import site.dengwei.blog.dto.LoginRequest;
 import site.dengwei.blog.dto.RegisterRequest;
 import site.dengwei.blog.entity.User;
-import site.dengwei.blog.exception.BusinessException;
 import site.dengwei.blog.service.UserService;
 import site.dengwei.blog.util.JwtUtil;
-import site.dengwei.common.beans.Response;
+import site.dengwei.blog.dto.Response;
 
 /**
  * 认证控制器，处理用户登录、登出和注册

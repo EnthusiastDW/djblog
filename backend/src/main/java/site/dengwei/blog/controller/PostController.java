@@ -12,7 +12,7 @@ import site.dengwei.blog.dto.request.*;
 import site.dengwei.blog.entity.Post;
 import site.dengwei.blog.service.PostService;
 import site.dengwei.blog.util.LambdaQueryUtils;
-import site.dengwei.common.beans.Response;
+import site.dengwei.blog.dto.Response;
 
 import java.util.List;
 import java.util.Map;

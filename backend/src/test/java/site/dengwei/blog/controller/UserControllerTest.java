@@ -13,7 +13,7 @@ import site.dengwei.blog.dto.request.*;
 import site.dengwei.blog.entity.User;
 import site.dengwei.blog.exception.BusinessException;
 import site.dengwei.blog.service.UserService;
-import site.dengwei.common.beans.Response;
+import site.dengwei.blog.dto.Response;
 
 import java.util.Arrays;
 

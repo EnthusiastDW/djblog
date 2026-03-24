@@ -14,10 +14,9 @@ import site.dengwei.blog.dto.request.UpdateCategoryRequest;
 import site.dengwei.blog.entity.Category;
 import site.dengwei.blog.exception.BusinessException;
 import site.dengwei.blog.service.CategoryService;
-import site.dengwei.common.beans.Response;
+import site.dengwei.blog.dto.Response;
 
 import java.util.Arrays;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
