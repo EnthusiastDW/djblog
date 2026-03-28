@@ -47,4 +47,18 @@ public interface UserService extends IService<User> {
      * @return 是否成功
      */
     boolean deleteUsers(DeleteRequest request);
+
+    /**
+     * 根据用户名查询用户
+     * @param username 用户名
+     * @return 用户实体
+     */
+    User findByUsername(String username);
+
+    /**
+     * 获取公开用户资料（脱敏）
+     * @param id 用户ID
+     * @return 脱敏后的用户信息
+     */
+    User getPublicUser(Long id);
 }

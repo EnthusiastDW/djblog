@@ -45,7 +45,7 @@ public class CustomSpringSecurityConfig {
         RequestMatcher getRequests = request -> "GET".equals(request.getMethod());
         
         http.csrf(AbstractHttpConfigurer::disable)
-                // 配置CORS
+                // 配置 CORS
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 // 无状态会话
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -53,8 +53,10 @@ public class CustomSpringSecurityConfig {
                         .requestMatchers("/auth/**", 
                                        "/swagger-ui.html", 
                                        "/swagger-ui/**", 
-                                       "/v3/api-docs/**").permitAll()
-                        // 允许所有GET请求无需认证
+                                       "/v3/api-docs/**",
+                                       "/comment/**",
+                                       "/setting/**",
+                                       "/post/*/view").permitAll()
                         .requestMatchers(getRequests).permitAll()
                         .anyRequest().authenticated()
                 )

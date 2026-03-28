@@ -40,6 +40,14 @@ public class UserController {
     }
 
     /**
+     * 获取公开用户资料（无需登录）
+     */
+    @GetMapping("{id}/public")
+    public Response<User> getPublicProfile(@PathVariable Long id) {
+        return Response.success(userService.getPublicUser(id));
+    }
+
+    /**
      * 创建用户
      */
     @PostMapping

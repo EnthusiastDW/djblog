@@ -22,6 +22,8 @@ buildNumber.properties
 .settings/
 *.swp
 *.swo
+.lingma
+.qoder
 
 # OS
 .DS_Store
@@ -34,6 +36,7 @@ logs/
 # Backend
 backend/target/
 backend/*.iml
+**/.flattened-pom.xml
 
 # Frontend
 frontend/node_modules/
@@ -41,6 +44,8 @@ frontend/dist/
 frontend/.env
 frontend/.env.local
 frontend/.env.*.local
+frontend/playwright-report
+frontend/test-results
 
 # Test
 *.class

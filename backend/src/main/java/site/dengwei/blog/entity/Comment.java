@@ -11,6 +11,7 @@ import site.dengwei.blog.enums.CommentStatus;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 评论实体类
@@ -81,4 +82,10 @@ public class Comment extends Model<Comment> implements Serializable {
      */
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
+    
+    /**
+     * 回复列表（非数据库字段）
+     */
+    @TableField(exist = false)
+    private List<Comment> replies;
 }

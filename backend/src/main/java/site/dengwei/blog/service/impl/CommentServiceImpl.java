@@ -6,16 +6,24 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import site.dengwei.blog.config.CommentAuditConfig;
 import site.dengwei.blog.dto.request.*;
 import site.dengwei.blog.entity.Comment;
+import site.dengwei.blog.entity.User;
 import site.dengwei.blog.enums.CommentStatus;
 import site.dengwei.blog.exception.BusinessException;
 import site.dengwei.blog.mapper.CommentMapper;
+import site.dengwei.blog.service.CommentAiAuditService;
 import site.dengwei.blog.service.CommentService;
+import site.dengwei.blog.service.UserService;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -29,6 +37,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> implements CommentService {
 
+    private final UserService userService;
+    private final CommentAuditConfig auditConfig;
+    private final CommentAiAuditService aiAuditService;
+
     @Override
     public Comment getByIdOrThrow(Long id) {
         Comment comment = getById(id);
@@ -41,11 +53,38 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     @Override
     public List<Comment> getCommentsByPostId(Long postId) {
         log.debug("查询文章评论列表，文章ID: {}", postId);
+        // 先获取所有评论
         LambdaQueryWrapper<Comment> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Comment::getPostId, postId)
                .eq(Comment::getStatus, CommentStatus.APPROVED)
                .orderByAsc(Comment::getCreatedAt);
-        return this.list(wrapper);
+        List<Comment> allComments = this.list(wrapper);
+        
+        // 构建评论树
+        Map<Long, Comment> commentMap = new HashMap<>();
+        List<Comment> rootComments = new ArrayList<>();
+        
+        // 先将所有评论放入map
+        for (Comment comment : allComments) {
+            comment.setReplies(new ArrayList<>());
+            commentMap.put(comment.getId(), comment);
+        }
+        
+        // 构建评论树
+        for (Comment comment : allComments) {
+            if (comment.getParentId() == null) {
+                // 根评论
+                rootComments.add(comment);
+            } else {
+                // 回复
+                Comment parentComment = commentMap.get(comment.getParentId());
+                if (parentComment != null) {
+                    parentComment.getReplies().add(comment);
+                }
+            }
+        }
+        
+        return rootComments;
     }
 
     @Override
@@ -61,8 +100,25 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean addComment(CreateCommentRequest request) {
-        log.info("添加评论，文章ID: {}", request.getPostId());
-
+        log.info("添加评论，文章 ID: {}", request.getPostId());
+    
+        // 如果是登录用户，自动填充用户信息
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (!"anonymousUser".equals(username)) {
+            User user = userService.findByUsername(username);
+            if (user != null) {
+                request.setUserId(user.getId());
+                // 如果前端没有传入作者名称，使用用户的用户名
+                if (request.getAuthorName() == null || request.getAuthorName().isEmpty()) {
+                    request.setAuthorName(user.getUsername());
+                }
+                // 如果前端没有传入作者邮箱，使用用户的邮箱
+                if (request.getAuthorEmail() == null || request.getAuthorEmail().isEmpty()) {
+                    request.setAuthorEmail(user.getEmail());
+                }
+            }
+        }
+    
         Comment comment = new Comment();
         comment.setPostId(request.getPostId());
         comment.setParentId(request.getParentId());
@@ -70,15 +126,41 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         comment.setAuthorName(request.getAuthorName());
         comment.setAuthorEmail(request.getAuthorEmail());
         comment.setAuthorUrl(request.getAuthorUrl());
-        comment.setStatus(CommentStatus.PENDING);
-
+        comment.setUserId(request.getUserId());
+        
+        // 根据配置决定评论状态
+        CommentStatus status = determineCommentStatus(comment);
+        comment.setStatus(status);
+    
         boolean result = this.save(comment);
         if (result) {
-            log.info("评论添加成功，评论ID: {}", comment.getId());
+            log.info("评论添加成功，评论 ID: {}, 状态：{}", comment.getId(), status);
         } else {
             log.error("评论添加失败");
         }
         return result;
+    }
+    
+    /**
+     * 根据配置决定评论状态
+     * @param comment 评论内容
+     * @return 评论状态
+     */
+    private CommentStatus determineCommentStatus(Comment comment) {
+        // 如果未启用审核，直接通过
+        if (Boolean.FALSE.equals(auditConfig.getAuditEnabled())) {
+            log.info("未启用评论审核，直接通过");
+            return CommentStatus.APPROVED;
+        }
+        
+        // 如果启用了 AI 判断，使用 AI 判断
+        if (Boolean.TRUE.equals(auditConfig.getAiEnabled())) {
+            return aiAuditService.judgeCommentStatus(comment);
+        }
+        
+        // 默认情况：需要审核但未启用 AI，设置为待审核
+        log.info("评论需要审核，设置为待审核状态");
+        return CommentStatus.PENDING;
     }
 
     @Override

@@ -1,6 +1,7 @@
 package site.dengwei.blog.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -27,10 +28,10 @@ public interface PostTagMapper extends BaseMapper<PostTag> {
     List<Post> selectPostsByTagId(@Param("tagId") Long tagId);
 
     /**
-     * 根据文章ID删除所有关联的标签
-     * @param postId 文章ID
-     * @return 删除数量
+     * 根据文章 ID 删除所有关联的标签
+     *
+     * @param postId 文章 ID
      */
-    @Select("DELETE FROM post_tag WHERE post_id = #{postId}")
-    int deleteByPostId(@Param("postId") Long postId);
+    @Delete("DELETE FROM post_tag WHERE post_id = #{postId}")
+    void deleteByPostId(@Param("postId") Long postId);
 }

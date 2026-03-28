@@ -32,6 +32,14 @@ public interface PostMapper extends BaseMapper<Post> {
     Page<Post> searchPosts(@Param("keyword") String keyword, Page<Post> page);
 
     /**
+     * 根据标签 ID 查询文章 ID 列表
+     * @param tagId 标签 ID
+     * @return 文章 ID 列表
+     */
+    @Select("SELECT post_id FROM post_tag WHERE tag_id = #{tagId}")
+    List<Long> selectPostIdsByTagId(@Param("tagId") Long tagId);
+
+    /**
      * 根据文章ID查询关联的标签列表
      * @param postId 文章ID
      * @return 标签列表
@@ -55,4 +63,13 @@ public interface PostMapper extends BaseMapper<Post> {
      */
     @Select("SELECT * FROM post WHERE status = 'PUBLISHED' AND DATE_FORMAT(published_at, '%Y-%m') = #{yearMonth} ORDER BY published_at DESC")
     Page<Post> selectPostsByArchive(@Param("yearMonth") String yearMonth, Page<Post> page);
+
+    @Select("SELECT COALESCE(SUM(view_count), 0) FROM post WHERE status = 'PUBLISHED'")
+    Long selectTotalViewCount();
+
+    @Select("SELECT COUNT(*) FROM post WHERE category_id = #{categoryId} AND status = 'PUBLISHED'")
+    Long countByCategoryId(@Param("categoryId") Long categoryId);
+
+    @Select("SELECT COUNT(*) FROM post_tag WHERE tag_id = #{tagId}")
+    Long countByTagId(@Param("tagId") Long tagId);
 }

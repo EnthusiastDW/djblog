@@ -10,10 +10,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import site.dengwei.blog.dto.request.*;
 import site.dengwei.blog.entity.Comment;
+import site.dengwei.blog.entity.User;
 import site.dengwei.blog.enums.CommentStatus;
 import site.dengwei.blog.service.CommentService;
+import site.dengwei.blog.service.UserService;
 import site.dengwei.blog.dto.Response;
 
 import java.util.Arrays;
@@ -35,10 +40,14 @@ class CommentControllerTest {
     @Mock
     private CommentService commentService;
 
+    @Mock
+    private UserService userService;
+
     @InjectMocks
     private CommentController commentController;
 
     private Comment testComment;
+    private User testUser;
 
     @BeforeEach
     void setUp() {
@@ -48,6 +57,11 @@ class CommentControllerTest {
         testComment.setContent("测试评论");
         testComment.setAuthorName("测试用户");
         testComment.setStatus(CommentStatus.APPROVED);
+
+        testUser = new User();
+        testUser.setId(1L);
+        testUser.setUsername("testuser");
+        testUser.setEmail("test@example.com");
     }
 
     // ==================== 查询测试 ====================
@@ -110,6 +124,46 @@ class CommentControllerTest {
         request.setPostId(1L);
         request.setContent("新评论");
         request.setAuthorName("新用户");
+        when(commentService.addComment(any(CreateCommentRequest.class))).thenReturn(true);
+
+        // When
+        Response<Boolean> response = commentController.insert(request);
+
+        // Then
+        assertNotNull(response);
+        assertEquals(200, response.getCode());
+        assertTrue(response.getData());
+    }
+
+    @Test
+    @DisplayName("登录用户发表评论自动填充信息")
+    void insert_LoggedInUser_AutoFill() {
+        // Given
+        CreateCommentRequest request = new CreateCommentRequest();
+        request.setPostId(1L);
+        request.setContent("新评论");
+
+        when(commentService.addComment(any(CreateCommentRequest.class))).thenReturn(true);
+
+        // When
+        Response<Boolean> response = commentController.insert(request);
+
+        // Then
+        assertNotNull(response);
+        assertEquals(200, response.getCode());
+        assertTrue(response.getData());
+    }
+
+    @Test
+    @DisplayName("匿名用户发表评论使用传入的信息")
+    void insert_AnonymousUser_UseProvidedInfo() {
+        // Given
+        CreateCommentRequest request = new CreateCommentRequest();
+        request.setPostId(1L);
+        request.setContent("新评论");
+        request.setAuthorName("匿名访客");
+        request.setAuthorEmail("visitor@example.com");
+
         when(commentService.addComment(any(CreateCommentRequest.class))).thenReturn(true);
 
         // When

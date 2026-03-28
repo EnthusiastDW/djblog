@@ -47,6 +47,11 @@ public class UpdatePostRequest {
     private String coverImage;
     
     /**
+     * 文章摘要
+     */
+    private String summary;
+    
+    /**
      * 分类ID
      */
     private Long categoryId;

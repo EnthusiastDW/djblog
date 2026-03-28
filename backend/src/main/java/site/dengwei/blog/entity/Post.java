@@ -46,6 +46,11 @@ public class Post extends Model<Post> implements Serializable {
     private String slug;
 
     /**
+     * 文章摘要
+     */
+    private String summary;
+
+    /**
      * 封面图片地址
      */
     private String coverImage;
@@ -64,6 +69,11 @@ public class Post extends Model<Post> implements Serializable {
      * 分类ID
      */
     private Long categoryId;
+    
+    /**
+     * 浏览次数
+     */
+    private Long viewCount;
     
     /**
      * 发布时间

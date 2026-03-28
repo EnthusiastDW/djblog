@@ -1,6 +1,7 @@
 package site.dengwei.blog.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import site.dengwei.blog.dto.TagWithCountDTO;
 import site.dengwei.blog.dto.request.CreateTagRequest;
 import site.dengwei.blog.dto.request.UpdateTagRequest;
 import site.dengwei.blog.entity.Tag;
@@ -23,6 +24,13 @@ public interface TagService extends IService<Tag> {
     List<Tag> getAllTags();
 
     /**
+     * 获取所有标签（带文章数量）
+     *
+     * @return 标签列表
+     */
+    List<TagWithCountDTO> getAllTagsWithCount();
+
+    /**
      * 根据ID查询标签，不存在则抛出异常
      *
      * @param id 标签ID
@@ -34,9 +42,9 @@ public interface TagService extends IService<Tag> {
      * 创建标签
      *
      * @param request 创建请求
-     * @return 是否成功
+     * @return 新创建的标签ID
      */
-    boolean createTag(CreateTagRequest request);
+    Long createTag(CreateTagRequest request);
 
     /**
      * 更新标签

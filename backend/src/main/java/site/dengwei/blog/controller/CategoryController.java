@@ -4,12 +4,15 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import site.dengwei.blog.dto.CategoryWithCountDTO;
 import site.dengwei.blog.dto.request.CreateCategoryRequest;
 import site.dengwei.blog.dto.request.UpdateCategoryRequest;
 import site.dengwei.blog.entity.Category;
 import site.dengwei.blog.service.CategoryService;
 import site.dengwei.blog.util.LambdaQueryUtils;
 import site.dengwei.blog.dto.Response;
+
+import java.util.List;
 
 /**
  * 分类控制器
@@ -23,6 +26,11 @@ import site.dengwei.blog.dto.Response;
 public class CategoryController {
     
     private final CategoryService categoryService;
+
+    @GetMapping("/all")
+    public Response<List<CategoryWithCountDTO>> getAllWithCount() {
+        return Response.success(categoryService.getAllCategoriesWithCount());
+    }
 
     /**
      * 分页查询所有分类
@@ -51,10 +59,10 @@ public class CategoryController {
      * 创建分类
      *
      * @param request 创建请求
-     * @return 操作结果
+     * @return 新创建的分类ID
      */
     @PostMapping
-    public Response<Boolean> insert(@Valid @RequestBody CreateCategoryRequest request) {
+    public Response<Long> insert(@Valid @RequestBody CreateCategoryRequest request) {
         return Response.success(categoryService.createCategory(request));
     }
 

@@ -55,6 +55,16 @@ public class User extends Model<User> implements Serializable, UserDetails {
     private String avatarUrl;
 
     /**
+     * 个人简介
+     */
+    private String bio;
+
+    /**
+     * 角色
+     */
+    private String role;
+
+    /**
      * 创建时间
      */
     @TableField(fill = FieldFill.INSERT)

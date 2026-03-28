@@ -40,6 +40,12 @@ public class PublishRequest {
     private String slug;
     
     /**
+     * 文章摘要
+     */
+    @Size(max = 500, message = "文章摘要长度不能超过500个字符")
+    private String summary;
+    
+    /**
      * 封面图片地址
      */
     private String coverImage;

@@ -33,9 +33,14 @@ public class CreateCommentRequest {
     private String content;
     
     /**
+     * 用户 ID（登录用户自动填充）
+     */
+    private Long userId;
+        
+    /**
      * 评论者姓名（未登录用户必填）
      */
-    @Size(max = 50, message = "评论者姓名长度不能超过50个字符")
+    @Size(max = 50, message = "评论者姓名长度不能超过 50 个字符")
     private String authorName;
     
     /**

@@ -1,5 +1,11 @@
 server:
   port: 8801
+
+# JWT 默认配置（可被 profile 覆盖）
+jwt:
+  secret: djblog-jwt-secret-key-must-be-at-least-64-characters-long-for-hs512-algorithm-security
+  expiration: 604800
+
 spring:
   profiles:
     active: dev
@@ -18,3 +24,13 @@ springdoc:
   packages-to-scan: site.dengwei.blog.controller
   swagger-ui:
     path: /swagger-ui.html
+
+# 博客评论审核配置
+blog:
+  comment:
+    # 是否启用评论审核（true: 需要审核，false: 默认通过）
+    audit-enabled: false
+    # 是否启用 AI 智能判断
+    ai-enabled: false
+    # AI 判断模式（AUTO: 自动决定，MANUAL: 辅助判断）
+    ai-mode: MANUAL

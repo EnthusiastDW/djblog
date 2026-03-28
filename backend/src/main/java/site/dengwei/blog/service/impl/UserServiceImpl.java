@@ -89,12 +89,37 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (request.getAvatar() != null) {
             user.setAvatarUrl(request.getAvatar());
         }
+        if (request.getBio() != null) {
+            user.setBio(request.getBio());
+        }
+        if (request.getRole() != null) {
+            user.setRole(request.getRole());
+        }
         return updateById(user);
     }
 
     @Override
     public boolean deleteUsers(DeleteRequest request) {
-        log.info("删除用户，ID列表: {}", request.getIdList());
+        log.info("删除用户，ID 列表：{}", request.getIdList());
         return removeByIds(request.getIdList());
+    }
+
+    @Override
+    public User findByUsername(String username) {
+        return getOne(new LambdaQueryWrapper<User>().eq(User::getUsername, username));
+    }
+
+    @Override
+    public User getPublicUser(Long id) {
+        User user = getById(id);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+        User publicUser = new User();
+        publicUser.setId(user.getId());
+        publicUser.setUsername(user.getUsername());
+        publicUser.setAvatarUrl(user.getAvatarUrl());
+        publicUser.setBio(user.getBio());
+        return publicUser;
     }
 }

@@ -44,7 +44,6 @@ class CategoryControllerTest {
         testCategory = new Category();
         testCategory.setId(1L);
         testCategory.setName("测试分类");
-        testCategory.setSlug("test-category");
         testCategory.setDescription("测试分类描述");
     }
 
@@ -102,15 +101,15 @@ class CategoryControllerTest {
         CreateCategoryRequest request = new CreateCategoryRequest();
         request.setName("新分类");
         request.setDescription("新分类描述");
-        when(categoryService.createCategory(any(CreateCategoryRequest.class))).thenReturn(true);
+        when(categoryService.createCategory(any(CreateCategoryRequest.class))).thenReturn(1L);
 
         // When
-        Response<Boolean> response = categoryController.insert(request);
+        Response<Long> response = categoryController.insert(request);
 
         // Then
         assertNotNull(response);
         assertEquals(200, response.getCode());
-        assertTrue(response.getData());
+        assertEquals(1L, response.getData());
         verify(categoryService).createCategory(any(CreateCategoryRequest.class));
     }
 

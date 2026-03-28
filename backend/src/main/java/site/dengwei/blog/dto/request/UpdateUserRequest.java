@@ -31,4 +31,16 @@ public class UpdateUserRequest {
      */
     @Size(max = 255, message = "头像URL长度不能超过255个字符")
     private String avatar;
+
+    /**
+     * 个人简介
+     */
+    @Size(max = 500, message = "个人简介长度不能超过500个字符")
+    private String bio;
+
+    /**
+     * 角色
+     */
+    @Size(max = 20, message = "角色长度不能超过20个字符")
+    private String role;
 }

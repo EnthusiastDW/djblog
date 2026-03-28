@@ -33,7 +33,7 @@ public class CommentController {
      * 分页查询所有数据
      */
     @GetMapping
-    public Response<IPage<Comment>> selectAll(IPage<Comment> page, Comment comment) {
+    public Response<IPage<Comment>> selectAll(Page<Comment> page, Comment comment) {
         return Response.success(commentService.page(page, LambdaQueryUtils.buildFromEntity(comment)));
     }
 

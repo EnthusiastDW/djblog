@@ -2,6 +2,11 @@
 server:
   port: 8801
 
+# JWT 配置
+jwt:
+  secret: ${JWT_SECRET:djblog-jwt-secret-key-must-be-at-least-64-characters-long-for-hs512-algorithm-security}
+  expiration: 604800
+
 spring:
   application:
     name: blog

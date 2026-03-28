@@ -27,6 +27,8 @@ public class PostDetailDTO implements Serializable {
     private String status;
     private Long authorId;
     private Long categoryId;
+    private String categoryName;
+    private Long viewCount;
     private Date publishedAt;
     private Date createdAt;
     private Date updatedAt;

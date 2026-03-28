@@ -96,6 +96,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
+
+        <!-- Spring AI OpenAI (for DashScope OpenAI-compatible API) -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-openai</artifactId>
+        </dependency>
         
         <!-- Hibernate Validator for Bean Validation support -->
         <dependency>

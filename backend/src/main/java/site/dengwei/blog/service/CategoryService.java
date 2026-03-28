@@ -1,6 +1,7 @@
 package site.dengwei.blog.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import site.dengwei.blog.dto.CategoryWithCountDTO;
 import site.dengwei.blog.dto.request.CreateCategoryRequest;
 import site.dengwei.blog.dto.request.UpdateCategoryRequest;
 import site.dengwei.blog.entity.Category;
@@ -23,6 +24,13 @@ public interface CategoryService extends IService<Category> {
     List<Category> getAllCategories();
 
     /**
+     * 获取所有分类（带文章数量）
+     *
+     * @return 分类列表
+     */
+    List<CategoryWithCountDTO> getAllCategoriesWithCount();
+
+    /**
      * 根据ID查询分类，不存在则抛出异常
      *
      * @param id 分类ID
@@ -34,9 +42,9 @@ public interface CategoryService extends IService<Category> {
      * 创建分类
      *
      * @param request 创建请求
-     * @return 是否成功
+     * @return 新创建的分类ID
      */
-    boolean createCategory(CreateCategoryRequest request);
+    Long createCategory(CreateCategoryRequest request);
 
     /**
      * 更新分类

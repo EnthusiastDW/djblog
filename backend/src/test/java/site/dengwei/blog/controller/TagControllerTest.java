@@ -44,7 +44,6 @@ class TagControllerTest {
         testTag = new Tag();
         testTag.setId(1L);
         testTag.setName("测试标签");
-        testTag.setSlug("test-tag");
     }
 
     // ==================== 查询测试 ====================
@@ -100,15 +99,15 @@ class TagControllerTest {
         // Given
         CreateTagRequest request = new CreateTagRequest();
         request.setName("新标签");
-        when(tagService.createTag(any(CreateTagRequest.class))).thenReturn(true);
+        when(tagService.createTag(any(CreateTagRequest.class))).thenReturn(1L);
 
         // When
-        Response<Boolean> response = tagController.insert(request);
+        Response<Long> response = tagController.insert(request);
 
         // Then
         assertNotNull(response);
         assertEquals(200, response.getCode());
-        assertTrue(response.getData());
+        assertEquals(1L, response.getData());
         verify(tagService).createTag(any(CreateTagRequest.class));
     }
 

@@ -4,12 +4,15 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import site.dengwei.blog.dto.TagWithCountDTO;
 import site.dengwei.blog.dto.request.CreateTagRequest;
 import site.dengwei.blog.dto.request.UpdateTagRequest;
 import site.dengwei.blog.entity.Tag;
 import site.dengwei.blog.service.TagService;
 import site.dengwei.blog.util.LambdaQueryUtils;
 import site.dengwei.blog.dto.Response;
+
+import java.util.List;
 
 /**
  * 标签控制器
@@ -23,6 +26,11 @@ import site.dengwei.blog.dto.Response;
 public class TagController {
     
     private final TagService tagService;
+
+    @GetMapping("/all")
+    public Response<List<TagWithCountDTO>> getAllWithCount() {
+        return Response.success(tagService.getAllTagsWithCount());
+    }
 
     /**
      * 分页查询所有标签
@@ -51,10 +59,10 @@ public class TagController {
      * 创建标签
      *
      * @param request 创建请求
-     * @return 操作结果
+     * @return 新创建的标签ID
      */
     @PostMapping
-    public Response<Boolean> insert(@Valid @RequestBody CreateTagRequest request) {
+    public Response<Long> insert(@Valid @RequestBody CreateTagRequest request) {
         return Response.success(tagService.createTag(request));
     }
 
