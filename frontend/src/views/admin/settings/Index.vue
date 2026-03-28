@@ -36,7 +36,9 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import api from '@/api/index'
+import { useAppStore } from '@/stores/app'
 
+const appStore = useAppStore()
 const bgImage = ref('')
 const bgOpacity = ref(0.3)
 const saving = ref(false)
@@ -61,8 +63,7 @@ async function handleSave() {
       bgOpacity: bgOpacity.value.toString()
     })
     ElMessage.success('保存成功')
-    localStorage.setItem('bgImage', bgImage.value)
-    localStorage.setItem('bgOpacity', bgOpacity.value.toString())
+    appStore.setBackground(bgImage.value, bgOpacity.value)
   } catch (e) {
     ElMessage.error('保存失败')
   } finally {
