@@ -1,0 +1,37 @@
+# 基于 OpenJDK 21
+FROM eclipse-temurin:21-jre-alpine
+
+WORKDIR /app
+
+# 安装 tzdata 以设置时区
+RUN apk add --no-cache tzdata
+
+# 设置时区为中国时区
+ENV TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# 创建非 root 用户运行应用
+RUN addgroup -g 1001 appgroup && \
+    adduser -u 1001 -G appgroup -s /bin/sh -D appuser
+
+# 复制 Jenkins 构建的 jar 包
+COPY backend/target/*.jar app.jar
+
+# 创建日志目录并设置权限
+RUN mkdir -p ./logs/blog && \
+    chown -R appuser:appgroup /app
+
+USER appuser
+
+# 暴露端口
+EXPOSE 8801
+
+# JVM 参数优化
+ENV JAVA_OPTS="-Xms512m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/app/logs"
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8801/actuator/health || exit 1
+
+# 启动应用
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

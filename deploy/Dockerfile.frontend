@@ -1,0 +1,26 @@
+# 基于 Nginx Alpine
+FROM nginx:1.27-alpine
+
+# 安装 tzdata 以设置时区
+USER root
+RUN apk add --no-cache tzdata
+
+# 设置时区为中国时区
+ENV TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# 复制自定义 nginx 配置
+COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
+
+# 复制 Jenkins 构建的前端静态文件
+COPY frontend/dist /usr/share/nginx/html
+
+# 暴露端口
+EXPOSE 80
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost/index.html || exit 1
+
+# Nginx 在前台运行
+CMD ["nginx", "-g", "daemon off;"]
