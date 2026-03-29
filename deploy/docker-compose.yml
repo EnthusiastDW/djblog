@@ -52,13 +52,25 @@ services:
     container_name: blog-backend
     restart: always
     environment:
-      SPRING_PROFILES_ACTIVE: prod
+      # Spring 环境配置
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      
+      # 数据库配置
+      DB_HOST: ${DB_HOST:-mysql}
+      DB_PORT: ${DB_PORT:-3306}
       DB_USERNAME: ${DB_USERNAME:-root}
-      DB_PASSWORD: ${DB_PASSWORD:-root123}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD environment variable must be set}
+      
+      # Redis 配置
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-123456}
-      JWT_SECRET: ${JWT_SECRET:-djblog-jwt-secret-key-must-be-at-least-64-characters-long-for-hs512-algorithm-security}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD environment variable must be set}
+      
+      # JWT 配置（生产环境必须设置）
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET environment variable must be set for production}
+      
+      # AI 配置（可选）
+      AI_DASHSCOPE_API_KEY: ${AI_DASHSCOPE_API_KEY:-}
     depends_on:
       mysql:
         condition: service_healthy

@@ -49,3 +49,4 @@ frontend/test-results
 
 # Test
 *.class
+**/.env

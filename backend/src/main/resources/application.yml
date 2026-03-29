@@ -1,17 +1,19 @@
 server:
   port: 8801
 
-# JWT 默认配置（可被 profile 覆盖）
+spring:
+  application:
+    name: blog
+  # 默认激活的开发环境
+  profiles:
+    active: dev
+
+# JWT 默认配置（可被环境配置覆盖）
 jwt:
   secret: djblog-jwt-secret-key-must-be-at-least-64-characters-long-for-hs512-algorithm-security
   expiration: 604800
 
-spring:
-  profiles:
-    active: dev
-  application:
-    name: blog
-
+# MyBatis Plus 通用配置
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
   configuration:
@@ -19,13 +21,17 @@ mybatis-plus:
   global-config:
     db-config:
       id-type: AUTO
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
 
+# Springdoc OpenAPI 通用配置
 springdoc:
   packages-to-scan: site.dengwei.blog.controller
   swagger-ui:
     path: /swagger-ui.html
 
-# 博客评论审核配置
+# 博客评论审核配置（全局）
 blog:
   comment:
     # 是否启用评论审核（true: 需要审核，false: 默认通过）
