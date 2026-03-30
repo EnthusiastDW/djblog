@@ -7,9 +7,10 @@ services:
     container_name: blog-mysql
     restart: always
     environment:
+      # Root 用户密码（必需）
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root123}
+      # 创建的应用数据库
       MYSQL_DATABASE: blog
-      MYSQL_USER: ${DB_USERNAME:-root}
       TZ: Asia/Shanghai
     ports:
       - "3306:3306"
@@ -48,7 +49,7 @@ services:
 
   # 后端服务 (从本地镜像或镜像仓库拉取)
   backend:
-    image: ${DOCKER_REGISTRY:-}${IMAGE_PREFIX:-djblog}/backend:${VERSION:-latest}
+    image: ${DOCKER_REGISTRY:-}/${IMAGE_PREFIX:-djblog}/backend:${VERSION:-latest}
     container_name: blog-backend
     restart: always
     environment:
@@ -85,7 +86,7 @@ services:
 
   # 前端服务 (从本地镜像或镜像仓库拉取)
   frontend:
-    image: ${DOCKER_REGISTRY:-}${IMAGE_PREFIX:-djblog}/frontend:${VERSION:-latest}
+    image: ${DOCKER_REGISTRY:-}/${IMAGE_PREFIX:-djblog}/frontend:${VERSION:-latest}
     container_name: blog-frontend
     restart: always
     depends_on:
