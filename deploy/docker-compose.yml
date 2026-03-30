@@ -6,14 +6,13 @@ services:
     image: mysql:8.0
     container_name: blog-mysql
     restart: always
+    network_mode: "host"
     environment:
       # Root 用户密码（必需）
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root123}
       # 创建的应用数据库
       MYSQL_DATABASE: blog
       TZ: Asia/Shanghai
-    ports:
-      - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./mysql/conf.d:/etc/mysql/conf.d
@@ -26,17 +25,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - blog-network
 
   # Redis 缓存
   redis:
     image: redis:7-alpine
     container_name: blog-redis
     restart: always
+    network_mode: "host"
     command: redis-server --requirepass ${REDIS_PASSWORD:-123456}
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -44,26 +40,25 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - blog-network
 
   # 后端服务 (从本地镜像或镜像仓库拉取)
   backend:
     image: ${DOCKER_REGISTRY:-}/${IMAGE_PREFIX:-djblog}/backend:${VERSION:-latest}
     container_name: blog-backend
     restart: always
+    network_mode: "host"
     environment:
       # Spring 环境配置
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       
       # 数据库配置
-      DB_HOST: ${DB_HOST:-mysql}
+      DB_HOST: ${DB_HOST:-127.0.0.1}
       DB_PORT: ${DB_PORT:-3306}
       DB_USERNAME: ${DB_USERNAME:-root}
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD environment variable must be set}
       
       # Redis 配置
-      REDIS_HOST: redis
+      REDIS_HOST: 127.0.0.1
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD environment variable must be set}
       
@@ -77,31 +72,20 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    ports:
-      - "8801:8801"
     volumes:
       - ./logs:/app/logs
-    networks:
-      - blog-network
 
   # 前端服务 (从本地镜像或镜像仓库拉取)
   frontend:
     image: ${DOCKER_REGISTRY:-}/${IMAGE_PREFIX:-djblog}/frontend:${VERSION:-latest}
     container_name: blog-frontend
     restart: always
+    network_mode: "host"
     depends_on:
       - backend
-    ports:
-      - "80:80"
-    networks:
-      - blog-network
 
 volumes:
   mysql_data:
     driver: local
   redis_data:
     driver: local
-
-networks:
-  blog-network:
-    driver: bridge

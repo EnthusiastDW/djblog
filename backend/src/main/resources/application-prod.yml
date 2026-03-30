@@ -73,8 +73,7 @@ logging:
     site.dengwei.blog: INFO
     com.baomidou.mybatisplus: WARN
     org.springframework: WARN
-  file:
-    name: logs/blog-prod.log
+
   logback:
     rollingpolicy:
       max-file-size: 100MB

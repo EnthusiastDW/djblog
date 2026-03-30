@@ -1,0 +1,9 @@
+-- 博客设置表
+CREATE TABLE IF NOT EXISTS blog_setting
+(
+    id             BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '设置 ID',
+    setting_key    VARCHAR(100) UNIQUE NOT NULL COMMENT '设置键',
+    setting_value  TEXT COMMENT '设置值',
+    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) COMMENT = '博客设置表';

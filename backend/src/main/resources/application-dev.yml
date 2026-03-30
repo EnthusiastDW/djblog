@@ -55,16 +55,6 @@ spring:
           max-active: 8
           max-idle: 8
           min-idle: 0
-  
-  # Spring AI 配置（使用 DashScope OpenAI 兼容接口调用千问模型）
-  ai:
-    openai:
-      api-key: ${AI_DASHSCOPE_API_KEY:your-api-key-here}
-      base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
-      chat:
-        options:
-          model: qwen-turbo
-          temperature: 0.3
 
 # MyBatis Plus 配置（开发环境开启 SQL 日志）
 mybatis-plus:
@@ -84,4 +74,6 @@ logging:
     com.baomidou.mybatisplus: DEBUG
     org.springframework: WARN
     org.hibernate.validator: DEBUG
+  file:
+    path: ./logs
 
