@@ -26,21 +26,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis 缓存
-  redis:
-    image: redis:7-alpine
-    container_name: blog-redis
-    restart: always
-    network_mode: "host"
-    command: redis-server --requirepass ${REDIS_PASSWORD:-123456}
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   # 后端服务 (从本地镜像或镜像仓库拉取)
   backend:
     image: ${DOCKER_REGISTRY:-}/${IMAGE_PREFIX:-djblog}/backend:${VERSION:-latest}
@@ -57,11 +42,6 @@ services:
       DB_USERNAME: ${DB_USERNAME:-root}
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD environment variable must be set}
       
-      # Redis 配置
-      REDIS_HOST: 127.0.0.1
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD environment variable must be set}
-      
       # JWT 配置（生产环境必须设置）
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET environment variable must be set for production}
       
@@ -69,8 +49,6 @@ services:
       AI_DASHSCOPE_API_KEY: ${AI_DASHSCOPE_API_KEY:-}
     depends_on:
       mysql:
-        condition: service_healthy
-      redis:
         condition: service_healthy
     volumes:
       - ./logs:/app/logs
@@ -86,6 +64,4 @@ services:
 
 volumes:
   mysql_data:
-    driver: local
-  redis_data:
     driver: local

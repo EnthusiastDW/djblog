@@ -43,19 +43,6 @@ spring:
     user: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:root123}
   
-  data:
-    redis:
-      host: ${REDIS_HOST:192.168.23.101}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:123456}
-      database: 0
-      timeout: 5000ms
-      lettuce:
-        pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
-
 # MyBatis Plus 配置（开发环境开启 SQL 日志）
 mybatis-plus:
   configuration:
