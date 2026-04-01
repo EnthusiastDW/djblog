@@ -21,6 +21,7 @@ public class PostDetailDTO implements Serializable {
     
     private Long id;
     private String title;
+    private String summary;
     private String content;
     private String slug;
     private String coverImage;

@@ -92,6 +92,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         PostDetailDTO dto = new PostDetailDTO();
         dto.setId(post.getId());
         dto.setTitle(post.getTitle());
+        dto.setSummary(post.getSummary());
         dto.setContent(post.getContent());
         dto.setSlug(post.getSlug());
         dto.setCoverImage(post.getCoverImage());

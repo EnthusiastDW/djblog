@@ -25,7 +25,7 @@ import { Link } from '@element-plus/icons-vue'
 const currentYear = computed(() => new Date().getFullYear())
 
 // 从环境变量或配置中读取备案号
-const icpNumber = import.meta.env.VITE_ICP_NUMBER || ''
+const icpNumber = import.meta.env.VITE_ICP_NUMBER || '蜀ICP备2026015075号'
 </script>
 
 <style lang="scss" scoped>
