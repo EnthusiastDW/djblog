@@ -58,7 +58,8 @@ services:
     image: ${DOCKER_REGISTRY:-}/${IMAGE_PREFIX:-djblog}/frontend:${VERSION:-latest}
     container_name: blog-frontend
     restart: always
-    network_mode: "host"
+    ports:
+      - "9000:80"
     depends_on:
       - backend
 
