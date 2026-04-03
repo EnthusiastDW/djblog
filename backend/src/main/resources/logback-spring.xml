@@ -76,8 +76,8 @@
     </root>
     
     <!-- 项目包日志级别 -->
-    <logger name="site.dengwei.blog" level="DEBUG"/>
-    <logger name="com.baomidou.mybatisplus" level="DEBUG"/>
+<!--    <logger name="site.dengwei.blog" level="DEBUG"/>-->
+<!--    <logger name="com.baomidou.mybatisplus" level="DEBUG"/>-->
     
     <!-- 第三方框架日志级别控制 -->
     <logger name="org.springframework" level="WARN"/>

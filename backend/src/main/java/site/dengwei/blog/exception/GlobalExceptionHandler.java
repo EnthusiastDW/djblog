@@ -1,5 +1,6 @@
 package site.dengwei.blog.exception;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
@@ -12,11 +13,12 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import site.dengwei.blog.dto.Response;
+import site.dengwei.blog.util.RequestContextUtil;
 
 import java.util.stream.Collectors;
 
 /**
- * 全局异常处理器
+ * Global exception handler for unified error handling.
  *
  * @author dengwei
  * @since 2025-12-08
@@ -25,100 +27,83 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    /**
-     * 处理业务异常
-     *
-     * @param e 业务异常
-     * @return 响应结果
-     */
+    // ==================== 业务异常 ====================
     @ExceptionHandler(BusinessException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Response<Void> handleBusinessException(BusinessException e) {
-        log.warn("业务异常：{}", e.getMessage());
+    public Response<Void> handleBusinessException(BusinessException e, HttpServletRequest request) {
+        log.error("业务异常 | IP: {} | URI: {} | Method: {} | Params: {} | Body: {} | Error: {}",
+                RequestContextUtil.getClientIp(request), request.getRequestURI(),
+                request.getMethod(), RequestContextUtil.getRequestParams(request),
+                RequestContextUtil.getRequestBody(request), e.getMessage(), e);
         return Response.error(e.getMessage());
     }
 
-    /**
-     * 处理参数校验异常（RequestBody）
-     *
-     * @param e 参数校验异常
-     * @return 响应结果
-     */
+    // ==================== 参数校验异常 ====================
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Response<Void> handleValidationException(MethodArgumentNotValidException e) {
+    public Response<Void> handleValidationException(MethodArgumentNotValidException e, HttpServletRequest request) {
         String errorMessage = e.getBindingResult().getFieldErrors().stream()
                 .map(FieldError::getDefaultMessage)
                 .collect(Collectors.joining("; "));
-        log.warn("参数校验异常：{}", errorMessage);
+        log.error("参数校验异常 | IP: {} | URI: {} | Method: {} | Params: {} | Body: {} | Error: {}",
+                RequestContextUtil.getClientIp(request), request.getRequestURI(),
+                request.getMethod(), RequestContextUtil.getRequestParams(request),
+                RequestContextUtil.getRequestBody(request), errorMessage, e);
         return Response.error(errorMessage);
     }
 
-    /**
-     * 处理参数绑定异常（非 RequestBody）
-     *
-     * @param e 参数绑定异常
-     * @return 响应结果
-     */
     @ExceptionHandler(BindException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Response<Void> handleBindException(BindException e) {
+    public Response<Void> handleBindException(BindException e, HttpServletRequest request) {
         String errorMessage = e.getBindingResult().getFieldErrors().stream()
                 .map(FieldError::getDefaultMessage)
                 .collect(Collectors.joining("; "));
-        log.warn("参数绑定异常：{}", errorMessage);
+        log.error("参数绑定异常 | IP: {} | URI: {} | Method: {} | Params: {} | Body: {} | Error: {}",
+                RequestContextUtil.getClientIp(request), request.getRequestURI(),
+                request.getMethod(), RequestContextUtil.getRequestParams(request),
+                RequestContextUtil.getRequestBody(request), errorMessage, e);
         return Response.error(errorMessage);
     }
 
-    /**
-     * 处理认证异常
-     *
-     * @param e 认证异常
-     * @return 响应结果
-     */
+    // ==================== 认证或凭证异常 ====================
     @ExceptionHandler(AuthenticationException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    public Response<Void> handleAuthenticationException(AuthenticationException e) {
-        log.warn("认证异常：{}", e.getMessage());
+    public Response<Void> handleAuthenticationException(AuthenticationException e, HttpServletRequest request) {
+        log.error("认证异常 | IP: {} | URI: {} | Method: {} | Params: {} | Body: {} | Error: {}",
+                RequestContextUtil.getClientIp(request), request.getRequestURI(),
+                request.getMethod(), RequestContextUtil.getRequestParams(request),
+                RequestContextUtil.getRequestBody(request), e.getMessage(), e);
         return Response.error("认证失败：" + e.getMessage());
     }
 
-    /**
-     * 处理凭证错误异常
-     *
-     * @param e 凭证错误异常
-     * @return 响应结果
-     */
     @ExceptionHandler(BadCredentialsException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    public Response<Void> handleBadCredentialsException(BadCredentialsException e) {
-        log.warn("凭证错误：{}", e.getMessage());
+    public Response<Void> handleBadCredentialsException(BadCredentialsException e, HttpServletRequest request) {
+        log.error("凭证错误 | IP: {} | URI: {} | Method: {} | Params: {} | Body: {} | Error: {}",
+                RequestContextUtil.getClientIp(request), request.getRequestURI(),
+                request.getMethod(), RequestContextUtil.getRequestParams(request),
+                RequestContextUtil.getRequestBody(request), e.getMessage(), e);
         return Response.error("用户名或密码错误");
     }
 
-    /**
-     * 处理权限不足异常
-     *
-     * @param e 权限不足异常
-     * @return 响应结果
-     */
     @ExceptionHandler(AccessDeniedException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
-    public Response<Void> handleAccessDeniedException(AccessDeniedException e) {
-        log.warn("访问被拒绝：{}", e.getMessage());
+    public Response<Void> handleAccessDeniedException(AccessDeniedException e, HttpServletRequest request) {
+        log.error("访问拒绝 | IP: {} | URI: {} | Method: {} | Params: {} | Body: {} | Error: {}",
+                RequestContextUtil.getClientIp(request), request.getRequestURI(),
+                request.getMethod(), RequestContextUtil.getRequestParams(request),
+                RequestContextUtil.getRequestBody(request), e.getMessage(), e);
         return Response.error("没有访问权限");
     }
 
-    /**
-     * 处理其他所有异常
-     *
-     * @param e 异常
-     * @return 响应结果
-     */
+    // ==================== 兜底异常 ====================
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public Response<Void> handleException(Exception e) {
-        log.error("系统内部异常：", e);
+    public Response<Void> handleException(Exception e, HttpServletRequest request) {
+        log.error("系统异常 | IP: {} | URI: {} | Method: {} | Params: {} | Body: {} | Error: {}",
+                RequestContextUtil.getClientIp(request), request.getRequestURI(),
+                request.getMethod(), RequestContextUtil.getRequestParams(request),
+                RequestContextUtil.getRequestBody(request), e.getMessage(), e);
         return Response.error("系统内部错误，请稍后重试");
     }
 }

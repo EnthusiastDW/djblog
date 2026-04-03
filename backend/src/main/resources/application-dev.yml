@@ -57,10 +57,10 @@ springdoc:
 logging:
   level:
     root: INFO
-    site.dengwei.blog: DEBUG
-    com.baomidou.mybatisplus: DEBUG
-    org.springframework: WARN
-    org.hibernate.validator: DEBUG
+#    site.dengwei.blog: DEBUG
+#    com.baomidou.mybatisplus: DEBUG
+#    org.springframework: WARN
+#    org.hibernate.validator: DEBUG
   file:
     path: ./logs
 

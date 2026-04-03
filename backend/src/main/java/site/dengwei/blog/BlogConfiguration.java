@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerIntercept
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 /**
@@ -16,6 +17,7 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
  * @since 2025-09-04
  */
 @EnableCaching
+@EnableAsync
 @Configuration
 public class BlogConfiguration {
 

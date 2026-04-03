@@ -36,6 +36,7 @@ public class CustomSpringSecurityConfig {
     
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+    private final RequestLoggingFilter requestLoggingFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -62,6 +63,7 @@ public class CustomSpringSecurityConfig {
                 )
                 // 配置自定义认证入口点
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(customAuthenticationEntryPoint))
+                .addFilterBefore(requestLoggingFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

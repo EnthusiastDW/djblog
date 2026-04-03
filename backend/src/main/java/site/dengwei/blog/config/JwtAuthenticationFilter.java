@@ -51,8 +51,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             } catch (ExpiredJwtException e) {
                 log.warn("JWT Token已过期");
             }
-        } else {
-            log.warn("JWT Token格式不正确");
         }
 
         // 验证token
