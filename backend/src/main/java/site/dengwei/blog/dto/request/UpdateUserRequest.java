@@ -33,6 +33,12 @@ public class UpdateUserRequest {
     private String avatar;
 
     /**
+     * 联系方式
+     */
+    @Size(max = 500, message = "联系方式长度不能超过500个字符")
+    private String contactInfo;
+
+    /**
      * 个人简介
      */
     @Size(max = 500, message = "个人简介长度不能超过500个字符")

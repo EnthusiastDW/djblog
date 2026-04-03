@@ -89,6 +89,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (request.getAvatar() != null) {
             user.setAvatarUrl(request.getAvatar());
         }
+        if (request.getContactInfo() != null) {
+            user.setContactInfo(request.getContactInfo());
+        }
         if (request.getBio() != null) {
             user.setBio(request.getBio());
         }
@@ -120,6 +123,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         publicUser.setUsername(user.getUsername());
         publicUser.setAvatarUrl(user.getAvatarUrl());
         publicUser.setBio(user.getBio());
+        publicUser.setContactInfo(user.getContactInfo());
         return publicUser;
     }
 }

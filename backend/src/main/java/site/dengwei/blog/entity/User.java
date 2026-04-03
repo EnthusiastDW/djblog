@@ -14,7 +14,6 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 
 /**
  * 用户实体类
@@ -53,6 +52,11 @@ public class User extends Model<User> implements Serializable, UserDetails {
      * 头像URL
      */
     private String avatarUrl;
+
+    /**
+     * 联系方式
+     */
+    private String contactInfo;
 
     /**
      * 个人简介
