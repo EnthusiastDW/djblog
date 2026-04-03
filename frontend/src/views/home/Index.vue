@@ -4,10 +4,17 @@
       <aside class="home-sidebar">
         <div class="profile-card">
           <div class="profile-avatar">
-            <el-avatar :size="80">{{ displayUser?.username?.charAt(0) || '博' }}</el-avatar>
+            <el-avatar v-if="displayUser?.avatarUrl" :size="80" :src="displayUser.avatarUrl" />
+            <el-avatar v-else :size="80">{{ displayUser?.username?.charAt(0) || '博' }}</el-avatar>
           </div>
           <h3 class="profile-name">{{ displayUser?.nickname || displayUser?.username || '博主' }}</h3>
           <p class="profile-bio">{{ displayUser?.bio || '这个人很懒，什么都没留下' }}</p>
+          <div class="profile-contact-row" v-if="displayUser?.email || displayUser?.contactInfo">
+            <a v-if="displayUser?.email" :href="'mailto:' + displayUser.email" class="contact-icon" title="发送邮件">
+              <el-icon><Message /></el-icon>
+            </a>
+            <span class="contact-text" v-if="displayUser?.contactInfo">{{ displayUser.contactInfo }}</span>
+          </div>
           <div class="profile-stats">
             <div class="stat-item">
               <span class="stat-value">{{ total }}</span>
@@ -95,7 +102,7 @@ import { categoryApi } from '@/api/category'
 import { tagApi } from '@/api/tag'
 import { userApi } from '@/api/user'
 import { formatDate } from '@/utils/format'
-import { Calendar, Folder, View, PriceTag } from '@element-plus/icons-vue'
+import { Calendar, Folder, View, PriceTag, Message } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -196,8 +203,40 @@ onMounted(() => {
 .profile-bio {
   font-size: 14px;
   color: var(--el-text-color-secondary);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   line-height: 1.6;
+}
+
+.profile-contact-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+}
+
+.contact-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--el-fill-color-light);
+  color: var(--el-text-color-secondary);
+  text-decoration: none;
+  transition: all 0.3s;
+
+  &:hover {
+    color: var(--el-color-primary);
+    background: var(--el-color-primary-light-9);
+  }
+}
+
+.contact-text {
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
 }
 
 .profile-stats {

@@ -52,6 +52,12 @@
         <el-form-item label="邮箱">
           <el-input v-model="form.email" />
         </el-form-item>
+        <el-form-item label="头像URL">
+          <el-input v-model="form.avatarUrl" placeholder="输入头像图片URL" />
+        </el-form-item>
+        <el-form-item label="联系方式">
+          <el-input v-model="form.contactInfo" placeholder="输入联系方式" />
+        </el-form-item>
         <el-form-item label="角色">
           <el-select v-model="form.role" style="width: 100%;">
             <el-option label="普通用户" value="USER" />
@@ -87,6 +93,8 @@ const form = reactive({
   id: null,
   username: '',
   email: '',
+  avatarUrl: '',
+  contactInfo: '',
   role: 'USER'
 })
 
@@ -115,6 +123,8 @@ function handleEdit(row) {
   form.id = row.id
   form.username = row.username
   form.email = row.email || ''
+  form.avatarUrl = row.avatarUrl || ''
+  form.contactInfo = row.contactInfo || ''
   form.role = row.role || 'USER'
   dialogVisible.value = true
 }
@@ -122,7 +132,14 @@ function handleEdit(row) {
 async function handleSubmit() {
   submitting.value = true
   try {
-    await userApi.update(form)
+    await userApi.update({
+      id: form.id,
+      username: form.username,
+      email: form.email,
+      avatarUrl: form.avatarUrl,
+      contactInfo: form.contactInfo,
+      role: form.role
+    })
     ElMessage.success('更新成功')
     dialogVisible.value = false
     fetchUsers()

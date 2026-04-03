@@ -21,6 +21,12 @@
         <el-form-item label="邮箱">
           <el-input v-model="form.email" />
         </el-form-item>
+        <el-form-item label="头像URL">
+          <el-input v-model="form.avatarUrl" placeholder="输入头像图片URL" />
+        </el-form-item>
+        <el-form-item label="联系方式">
+          <el-input v-model="form.contactInfo" placeholder="输入联系方式" />
+        </el-form-item>
         <el-form-item label="个人简介">
           <el-input v-model="form.bio" type="textarea" :rows="3" />
         </el-form-item>
@@ -46,6 +52,8 @@ const loading = ref(false)
 const form = reactive({
   username: '',
   email: '',
+  avatarUrl: '',
+  contactInfo: '',
   bio: ''
 })
 
@@ -53,6 +61,8 @@ onMounted(() => {
   if (userStore.user) {
     form.username = userStore.user.username || ''
     form.email = userStore.user.email || ''
+    form.avatarUrl = userStore.user.avatarUrl || ''
+    form.contactInfo = userStore.user.contactInfo || ''
     form.bio = userStore.user.bio || ''
   }
 })
@@ -63,10 +73,14 @@ async function handleUpdate() {
     await userApi.update({
       id: userStore.user.id,
       email: form.email,
+      avatar: form.avatarUrl,
+      contactInfo: form.contactInfo,
       bio: form.bio
     })
     userStore.updateUserInfo({
       email: form.email,
+      avatarUrl: form.avatarUrl,
+      contactInfo: form.contactInfo,
       bio: form.bio
     })
     ElMessage.success('保存成功')
