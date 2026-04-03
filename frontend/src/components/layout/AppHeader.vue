@@ -12,10 +12,10 @@
           <router-link to="/archives" class="nav-item" :class="{ active: route.path.startsWith('/archives') }">
             归档
           </router-link>
-          <router-link to="/categories" class="nav-item" :class="{ active: route.path.startsWith('/category') }">
+          <router-link to="/categories" class="nav-item" :class="{ active: route.path.startsWith('/categories') }">
             分类
           </router-link>
-          <router-link to="/tags" class="nav-item" :class="{ active: route.path.startsWith('/tag') }">
+          <router-link to="/tags" class="nav-item" :class="{ active: route.path.startsWith('/tags') }">
             标签
           </router-link>
         </nav>
