@@ -72,4 +72,12 @@ public interface PostMapper extends BaseMapper<Post> {
 
     @Select("SELECT COUNT(*) FROM post_tag WHERE tag_id = #{tagId}")
     Long countByTagId(@Param("tagId") Long tagId);
+
+    /**
+     * 查询热门文章（按浏览量降序）
+     * @param limit 数量限制
+     * @return 热门文章列表
+     */
+    @Select("SELECT * FROM post WHERE status = 'PUBLISHED' ORDER BY view_count DESC LIMIT #{limit}")
+    List<Post> selectPopularPosts(@Param("limit") int limit);
 }

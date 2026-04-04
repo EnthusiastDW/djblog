@@ -150,6 +150,12 @@ const routes = [
         name: 'AdminSettings',
         component: () => import('@/views/admin/settings/Index.vue'),
         meta: { title: '全局设置' }
+      },
+      {
+        path: 'posts/import',
+        name: 'AdminPostsImport',
+        component: () => import('@/views/admin/posts/Import.vue'),
+        meta: { title: '文章导入' }
       }
     ]
   },

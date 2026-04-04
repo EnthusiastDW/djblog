@@ -118,4 +118,20 @@ public interface PostService extends IService<Post> {
      * 增加文章阅读量
      */
     boolean incrementViewCount(Long id);
+
+    /**
+     * 获取热门文章列表（按访问量排序）
+     * @param limit 数量限制
+     * @return 热门文章列表
+     */
+    List<Post> getPopularPosts(int limit);
+
+    /**
+     * 批量导入文章
+     *
+     * @param posts 文章列表
+     * @param userId 用户 ID
+     * @return 导入结果（成功数量、失败数量）
+     */
+    Map<String, Object> importPosts(List<ImportPostRequest> posts, Long userId);
 }

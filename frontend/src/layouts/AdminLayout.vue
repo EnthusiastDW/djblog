@@ -22,6 +22,7 @@
           </template>
           <el-menu-item index="/admin/posts">文章列表</el-menu-item>
           <el-menu-item index="/admin/posts/write">写文章</el-menu-item>
+          <el-menu-item index="/admin/posts/import">批量导入</el-menu-item>
         </el-sub-menu>
         <el-menu-item index="/admin/categories">
           <el-icon><Folder /></el-icon>

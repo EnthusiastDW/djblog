@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import site.dengwei.blog.dto.PostDetailDTO;
 import site.dengwei.blog.dto.PostListDTO;
@@ -25,7 +26,9 @@ import site.dengwei.blog.service.AiSummaryService;
 import site.dengwei.blog.service.PostService;
 import site.dengwei.blog.service.PostTagService;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -427,13 +430,13 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     }
     
     /**
-     * 确保 slug 唯一性，如果重复则添加 ID 后缀
+     * 确保 slug 唯一性
      * @param baseSlug 基础 slug
-     * @param currentId 当前文章 ID（更新时使用）
+     * @param currentId 当前文章 ID（更新时使用，可为 null）
      * @return 唯一的 slug
      */
     private String ensureUniqueSlug(String baseSlug, Long currentId) {
-        // 查询是否存在相同的 slug
+        // 查询是否存在相同的 slug（排除当前文章）
         Post existingPost = getOne(new LambdaQueryWrapper<Post>()
                 .eq(Post::getSlug, baseSlug)
                 .ne(currentId != null, Post::getId, currentId));
@@ -443,8 +446,21 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
             log.debug("slug 可用：{}", baseSlug);
             return baseSlug;
         }
-        // slug 重复，添加后缀
-        return baseSlug + "-" + currentId;
+        
+        // slug 重复，添加计数器后缀
+        String originalSlug = baseSlug;
+        int counter = 1;
+        while (true) {
+            String newSlug = originalSlug + "-" + counter;
+            Post checkPost = getOne(new LambdaQueryWrapper<Post>()
+                    .eq(Post::getSlug, newSlug)
+                    .ne(currentId != null, Post::getId, currentId));
+            if (checkPost == null) {
+                log.debug("slug 重复，使用：{}", newSlug);
+                return newSlug;
+            }
+            counter++;
+        }
     }
 
     @Override
@@ -470,5 +486,145 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         }
         post.setViewCount(currentCount + 1);
         return updateById(post);
+    }
+
+    @Override
+    public List<Post> getPopularPosts(int limit) {
+        return postMapper.selectPopularPosts(limit);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Map<String, Object> importPosts(List<ImportPostRequest> posts, Long userId) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        int successCount = 0;
+        int failCount = 0;
+        List<String> errors = new ArrayList<>();
+
+        for (ImportPostRequest postReq : posts) {
+            try {
+                // 1. 处理分类（自动创建）
+                Long categoryId = getOrCreateCategory(postReq.getCategory());
+
+                // 2. 处理标签（自动创建，最多 3 个）
+                List<Long> tagIds = getOrCreateTags(postReq.getTags());
+
+                // 3. 生成或处理 slug
+                String slug = postReq.getSlug();
+                if (slug == null || slug.isEmpty()) {
+                    slug = aiSlugService.generateSlug(postReq.getTitle());
+                }
+                // 确保 slug 唯一
+                slug = ensureUniqueSlug(slug, null);
+
+                // 4. 解析日期
+                LocalDateTime createdAt = parseDateTime(postReq.getCreatedAt());
+                LocalDateTime updatedAt = parseDateTime(postReq.getUpdatedAt());
+                LocalDateTime publishedAt = createdAt != null ? createdAt : LocalDateTime.now();
+
+                // 5. 构建文章实体
+                Post post = new Post();
+                post.setTitle(postReq.getTitle());
+                post.setSlug(slug);
+                post.setContent(postReq.getContent());
+                post.setSummary(postReq.getSummary() != null ? postReq.getSummary() : 
+                    aiSummaryService.generateSummary(postReq.getTitle(), postReq.getContent(), 200));
+                post.setCoverImage(postReq.getCoverImage());
+                post.setStatus(PostStatus.PUBLISHED);
+                post.setAuthorId(userId);
+                post.setCategoryId(categoryId);
+                post.setViewCount(0L);
+                post.setPublishedAt(publishedAt);
+                post.setCreatedAt(createdAt != null ? createdAt : LocalDateTime.now());
+                post.setUpdatedAt(updatedAt != null ? updatedAt : LocalDateTime.now());
+
+                // 6. 保存文章
+                save(post);
+
+                // 7. 保存标签关联
+                if (!tagIds.isEmpty()) {
+                    postTagService.setPostTags(post.getId(), tagIds);
+                }
+
+                successCount++;
+                log.info("导入文章成功：{}", postReq.getTitle());
+
+            } catch (Exception e) {
+                failCount++;
+                String errorMsg = String.format("导入失败 [%s]: %s", postReq.getTitle(), e.getMessage());
+                errors.add(errorMsg);
+                log.error(errorMsg, e);
+            }
+        }
+
+        result.put("successCount", successCount);
+        result.put("failCount", failCount);
+        result.put("errors", errors);
+
+        return result;
+    }
+
+    /**
+     * 获取或创建分类
+     */
+    private Long getOrCreateCategory(String categoryName) {
+        LambdaQueryWrapper<Category> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Category::getName, categoryName);
+        Category category = categoryMapper.selectOne(wrapper);
+
+        if (category == null) {
+            category = new Category();
+            category.setName(categoryName);
+            categoryMapper.insert(category);
+            log.info("创建新分类：{}", categoryName);
+        }
+
+        return category.getId();
+    }
+
+    /**
+     * 获取或创建标签列表
+     */
+    private List<Long> getOrCreateTags(List<String> tagNames) {
+        List<Long> tagIds = new ArrayList<>();
+        if (tagNames == null || tagNames.isEmpty()) {
+            return tagIds;
+        }
+
+        for (String tagName : tagNames) {
+            LambdaQueryWrapper<Tag> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(Tag::getName, tagName);
+            Tag tag = tagMapper.selectOne(wrapper);
+
+            if (tag == null) {
+                tag = new Tag();
+                tag.setName(tagName);
+                tagMapper.insert(tag);
+                log.info("创建新标签：{}", tagName);
+            }
+
+            tagIds.add(tag.getId());
+        }
+
+        return tagIds;
+    }
+
+
+
+    /**
+     * 解析日期时间字符串
+     */
+    private LocalDateTime parseDateTime(String dateTimeStr) {
+        if (dateTimeStr == null || dateTimeStr.isEmpty()) {
+            return null;
+        }
+
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            return LocalDateTime.parse(dateTimeStr, formatter);
+        } catch (Exception e) {
+            log.warn("日期解析失败：{}, 使用当前时间", dateTimeStr);
+            return LocalDateTime.now();
+        }
     }
 }

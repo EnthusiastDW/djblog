@@ -1,42 +1,7 @@
 <template>
   <div class="home-page">
     <div class="home-layout">
-      <aside class="home-sidebar">
-        <div class="profile-card">
-          <div class="profile-avatar">
-            <el-avatar v-if="displayUser?.avatarUrl" :size="80" :src="displayUser.avatarUrl" />
-            <el-avatar v-else :size="80">{{ displayUser?.username?.charAt(0) || '博' }}</el-avatar>
-          </div>
-          <h3 class="profile-name">{{ displayUser?.nickname || displayUser?.username || '博主' }}</h3>
-          <p class="profile-bio">{{ displayUser?.bio || '这个人很懒，什么都没留下' }}</p>
-          <div class="profile-contact-row" v-if="displayUser?.email || displayUser?.contactInfo">
-            <a v-if="displayUser?.email" :href="'mailto:' + displayUser.email" class="contact-icon" title="发送邮件">
-              <el-icon><Message /></el-icon>
-            </a>
-            <span class="contact-text" v-if="displayUser?.contactInfo">{{ displayUser.contactInfo }}</span>
-          </div>
-          <div class="profile-stats">
-            <div class="stat-item">
-              <span class="stat-value">{{ total }}</span>
-              <span class="stat-label">文章</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">{{ categoryCount }}</span>
-              <span class="stat-label">分类</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">{{ tagCount }}</span>
-              <span class="stat-label">标签</span>
-            </div>
-          </div>
-        </div>
-      </aside>
-      
       <main class="home-main">
-        <div class="page-header">
-          <h1 class="page-title">最新文章</h1>
-        </div>
-
         <div class="post-list" v-loading="loading">
           <template v-if="posts.length > 0">
             <article
@@ -112,16 +77,6 @@ const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
-const categoryCount = ref(0)
-const tagCount = ref(0)
-const blogUser = ref(null)
-
-const displayUser = computed(() => {
-  if (userStore.isLoggedIn) {
-    return userStore.user
-  }
-  return blogUser.value
-})
 
 async function fetchPosts() {
   loading.value = true
@@ -133,24 +88,10 @@ async function fetchPosts() {
     ])
     posts.value = postRes.data.records || []
     total.value = postRes.data.total || 0
-    categoryCount.value = categoryRes.data?.length || 0
-    tagCount.value = tagRes.data?.length || 0
   } catch (e) {
     console.error('获取文章列表失败', e)
   } finally {
     loading.value = false
-  }
-}
-
-async function fetchBlogUser() {
-  if (userStore.isLoggedIn) return
-  try {
-    const res = await userApi.getFirstUser()
-    if (res.data?.records?.length > 0) {
-      blogUser.value = res.data.records[0]
-    }
-  } catch (e) {
-    console.error('获取博主信息失败', e)
   }
 }
 
@@ -161,106 +102,18 @@ function handlePageChange(page) {
 
 onMounted(() => {
   fetchPosts()
-  fetchBlogUser()
 })
 </script>
 
 <style lang="scss" scoped>
 .home-page {
-  max-width: 1200px;
+  margin: 0 auto;
+  min-height: calc(100vh - 180px);
 }
 
 .home-layout {
   display: flex;
   gap: 24px;
-}
-
-.home-sidebar {
-  width: 280px;
-  flex-shrink: 0;
-}
-
-.profile-card {
-  background: var(--el-bg-color);
-  border-radius: 8px;
-  padding: 24px;
-  text-align: center;
-  position: sticky;
-  top: 84px;
-}
-
-.profile-avatar {
-  margin-bottom: 16px;
-}
-
-.profile-name {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-  margin-bottom: 8px;
-}
-
-.profile-bio {
-  font-size: 14px;
-  color: var(--el-text-color-secondary);
-  margin-bottom: 16px;
-  line-height: 1.6;
-}
-
-.profile-contact-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding-bottom: 16px;
-}
-
-.contact-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--el-fill-color-light);
-  color: var(--el-text-color-secondary);
-  text-decoration: none;
-  transition: all 0.3s;
-
-  &:hover {
-    color: var(--el-color-primary);
-    background: var(--el-color-primary-light-9);
-  }
-}
-
-.contact-text {
-  font-size: 13px;
-  color: var(--el-text-color-secondary);
-}
-
-.profile-stats {
-  display: flex;
-  justify-content: space-around;
-  padding-top: 16px;
-  border-top: 1px solid var(--el-border-color-lighter);
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.stat-value {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-}
-
-.stat-label {
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
 }
 
 .home-main {
@@ -280,8 +133,9 @@ onMounted(() => {
 
 .post-list {
   display: flex;
-  flex-direction: column;
   gap: 16px;
+  flex-wrap: wrap;
+  align-content: flex-start;
 }
 
 .post-card {
@@ -292,10 +146,17 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.3s;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  width: calc(50% - 8px);
 
   &:hover {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     transform: translateY(-2px);
+  }
+}
+
+@media (max-width: 768px) {
+  .post-card {
+    width: 100%;
   }
 }
 
@@ -354,12 +215,6 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   margin-top: 32px;
-}
-
-@media (max-width: 992px) {
-  .home-sidebar {
-    display: none;
-  }
 }
 
 @media (max-width: 768px) {

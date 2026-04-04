@@ -84,5 +84,19 @@ export const postApi = {
   // 增加阅读量
   incrementViewCount(id) {
     return api.post(`/post/${id}/view`)
+  },
+
+  // 获取热门文章
+  getPopular(params = {}) {
+    return api.get('/post/popular', { params })
+  },
+
+  // 导入文章
+  import(formData) {
+    return api.post('/post/import', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
   }
 }

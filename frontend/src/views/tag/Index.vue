@@ -53,10 +53,6 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.tag-page {
-  max-width: 900px;
-}
-
 .page-header {
   margin-bottom: 24px;
 }

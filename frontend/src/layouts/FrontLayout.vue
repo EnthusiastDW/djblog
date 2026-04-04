@@ -1,36 +1,49 @@
 <template>
-  <el-container class="front-layout">
+  <div class="front-layout">
     <div class="bg-image" :style="bgStyle"></div>
     <div class="bg-overlay" :style="{ opacity: appStore.bgOpacity }"></div>
-    <el-header class="front-header">
+    <header class="front-header">
       <app-header />
-    </el-header>
-    <el-container class="front-main-container">
-      <el-main class="front-main">
+    </header>
+    <div class="front-main-container">
+      <main class="front-main">
         <router-view v-slot="{ Component }">
           <transition name="fade-slide" mode="out-in">
             <component :is="Component" />
           </transition>
         </router-view>
-      </el-main>
-      <el-aside class="front-aside" width="300px">
+      </main>
+      <aside class="front-aside" :class="{ 'sidebar-hidden': isMobile && appStore.sidebarCollapsed }">
         <app-sidebar />
-      </el-aside>
-    </el-container>
-    <el-footer class="front-footer">
+      </aside>
+    </div>
+    <div class="sidebar-overlay" :class="{ 'overlay-visible': isMobile && !appStore.sidebarCollapsed }" @click="handleToggleSidebar"></div>
+    <footer class="front-footer">
       <app-footer />
-    </el-footer>
-  </el-container>
+    </footer>
+  </div>
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
+import { useMediaQuery } from '@vueuse/core'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import { useAppStore } from '@/stores/app'
 
 const appStore = useAppStore()
+const isMobile = useMediaQuery('(max-width: 992px)')
+
+function handleToggleSidebar() {
+  appStore.toggleSidebar()
+}
+
+watch(isMobile, (newIsMobile) => {
+  if (newIsMobile) {
+    appStore.sidebarCollapsed = true
+  }
+}, { immediate: true })
 
 const bgStyle = computed(() => {
   const baseStyle = {
@@ -101,20 +114,20 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.8);
   border-bottom: 1px solid var(--el-border-color-lighter);
   z-index: 100;
-  padding: 0;
   backdrop-filter: blur(10px);
 }
 
 .front-main-container {
-  margin-top: 60px;
+  padding-top: 60px;
   flex: 1;
+  display: flex;
 }
 
 .front-main {
   padding: 24px;
   background: rgba(255, 255, 255, 0.8);
-  min-height: calc(100vh - 120px);
   backdrop-filter: blur(10px);
+  flex: 1;
 }
 
 .front-aside {
@@ -122,9 +135,34 @@ onMounted(() => {
   padding: 16px;
   border-left: 1px solid var(--el-border-color-lighter);
   backdrop-filter: blur(10px);
+  width: 300px;
+  transition: transform 0.3s ease;
+}
+
+.sidebar-hidden {
+  display: none;
+}
+
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 99;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.overlay-visible {
+  opacity: 1;
+  visibility: visible;
 }
 
 .front-footer {
+  width: 100%;
   height: auto;
   padding: 0;
   background: rgba(255, 255, 255, 0.8);
@@ -153,9 +191,34 @@ onMounted(() => {
   background: rgba(20, 20, 20, 0.8) !important;
 }
 
+.dark .sidebar-overlay {
+  background: rgba(0, 0, 0, 0.7) !important;
+}
+
 @media (max-width: 992px) {
   .front-aside {
-    display: none;
+    position: fixed;
+    top: 60px;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    transform: translateX(100%);
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .front-aside:not(.sidebar-hidden) {
+    transform: translateX(0);
+  }
+
+  .sidebar-hidden {
+    display: block;
+    transform: translateX(100%);
+  }
+
+  .front-main {
+    width: 100%;
   }
 }
 </style>

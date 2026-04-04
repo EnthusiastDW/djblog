@@ -1,6 +1,17 @@
 @import './variables.scss';
 @import './reset.scss';
 
+// 文字选择样式 - 支持不同主题
+::selection {
+  background: var(--el-color-primary-light-7);
+  color: var(--el-color-primary);
+}
+
+.dark ::selection {
+  background: var(--el-color-primary-light-5);
+  color: var(--el-color-primary-light-9);
+}
+
 // 通用样式
 .page-container {
   max-width: 1200px;

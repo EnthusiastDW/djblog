@@ -10,10 +10,10 @@ import org.springframework.stereotype.Service;
 import site.dengwei.blog.dto.CategoryWithCountDTO;
 import site.dengwei.blog.dto.request.CreateCategoryRequest;
 import site.dengwei.blog.dto.request.UpdateCategoryRequest;
+import site.dengwei.blog.entity.Category;
 import site.dengwei.blog.exception.BusinessException;
 import site.dengwei.blog.mapper.CategoryMapper;
 import site.dengwei.blog.mapper.PostMapper;
-import site.dengwei.blog.entity.Category;
 import site.dengwei.blog.service.CategoryService;
 
 import java.util.List;
@@ -40,7 +40,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     @Override
     public List<CategoryWithCountDTO> getAllCategoriesWithCount() {
         List<Category> categories = baseMapper.selectList(null);
-        return categories.stream().map(cat -> {
+        List<CategoryWithCountDTO> result = categories.stream().map(cat -> {
             CategoryWithCountDTO dto = new CategoryWithCountDTO();
             dto.setId(cat.getId());
             dto.setName(cat.getName());
@@ -48,7 +48,9 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
             dto.setParentId(cat.getParentId());
             dto.setPostCount(postMapper.countByCategoryId(cat.getId()));
             return dto;
-        }).toList();
+        }).sorted((a, b) -> Long.compare(b.getPostCount() != null ? b.getPostCount() : 0L,
+                a.getPostCount() != null ? a.getPostCount() : 0L)).toList();
+        return result;
     }
 
     @Override
@@ -65,17 +67,17 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     public Long createCategory(CreateCategoryRequest request) {
         // 检查分类名称是否已存在
         List<Category> existingCategories = baseMapper.selectList(
-            new LambdaQueryWrapper<Category>().eq(Category::getName, request.getName())
+                new LambdaQueryWrapper<Category>().eq(Category::getName, request.getName())
         );
         if (!existingCategories.isEmpty()) {
             throw new BusinessException("分类名称已存在");
         }
-            
+
         Category category = new Category();
         category.setName(request.getName());
         category.setDescription(request.getDescription());
         category.setParentId(request.getParentId());
-            
+
         save(category);
         log.info("创建分类：{}, ID: {}", request.getName(), category.getId());
         return category.getId();
@@ -88,7 +90,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         category.setName(request.getName());
         category.setDescription(request.getDescription());
         category.setParentId(request.getParentId());
-            
+
         log.info("更新分类，ID: {}", request.getId());
         return updateById(category);
     }

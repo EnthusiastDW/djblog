@@ -6,7 +6,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import site.dengwei.blog.dto.PostDetailDTO;
 import site.dengwei.blog.dto.PostListDTO;
 import site.dengwei.blog.dto.request.*;
@@ -17,6 +20,9 @@ import site.dengwei.blog.service.PostService;
 import site.dengwei.blog.util.LambdaQueryUtils;
 import site.dengwei.blog.dto.Response;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 
@@ -179,6 +185,41 @@ public class PostController {
     @PostMapping("/{id}/view")
     public Response<Boolean> incrementViewCount(@PathVariable Long id) {
         return Response.success(postService.incrementViewCount(id));
+    }
+
+    /**
+     * 获取热门文章列表
+     */
+    @GetMapping("/popular")
+    public Response<List<Post>> getPopularPosts(
+            @RequestParam(defaultValue = "10") Integer size) {
+        return Response.success(postService.getPopularPosts(size));
+    }
+
+    /**
+     * 批量导入文章
+     */
+    @PostMapping("/import")
+    public Response<Map<String, Object>> importPosts(
+            @RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal UserDetails userDetails) throws IOException {
+        
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("上传文件不能为空");
+        }
+
+        // 读取 JSON 文件内容
+        byte[] bytes = file.getBytes();
+        String jsonContent = new String(bytes, StandardCharsets.UTF_8);
+        
+        // 解析 JSON
+        com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        List<ImportPostRequest> posts = objectMapper.readValue(jsonContent, 
+            new com.fasterxml.jackson.core.type.TypeReference<List<ImportPostRequest>>() {});
+
+        Long userId = 1L;
+        Map<String, Object> result = postService.importPosts(posts, userId);
+        return Response.success(result);
     }
 
     /**

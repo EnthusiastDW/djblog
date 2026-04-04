@@ -10,10 +10,10 @@ import org.springframework.stereotype.Service;
 import site.dengwei.blog.dto.TagWithCountDTO;
 import site.dengwei.blog.dto.request.CreateTagRequest;
 import site.dengwei.blog.dto.request.UpdateTagRequest;
-import site.dengwei.blog.exception.BusinessException;
-import site.dengwei.blog.mapper.TagMapper;
-import site.dengwei.blog.mapper.PostMapper;
 import site.dengwei.blog.entity.Tag;
+import site.dengwei.blog.exception.BusinessException;
+import site.dengwei.blog.mapper.PostMapper;
+import site.dengwei.blog.mapper.TagMapper;
 import site.dengwei.blog.service.TagService;
 
 import java.util.List;
@@ -40,13 +40,15 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
     @Override
     public List<TagWithCountDTO> getAllTagsWithCount() {
         List<Tag> tags = baseMapper.selectList(null);
-        return tags.stream().map(tag -> {
+        List<TagWithCountDTO> result = tags.stream().map(tag -> {
             TagWithCountDTO dto = new TagWithCountDTO();
             dto.setId(tag.getId());
             dto.setName(tag.getName());
             dto.setPostCount(postMapper.countByTagId(tag.getId()));
             return dto;
-        }).toList();
+        }).sorted((a, b) -> Long.compare(b.getPostCount() != null ? b.getPostCount() : 0L,
+                a.getPostCount() != null ? a.getPostCount() : 0L)).toList();
+        return result;
     }
 
     @Override
@@ -63,15 +65,15 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
     public Long createTag(CreateTagRequest request) {
         // 检查标签名称是否已存在
         List<Tag> existingTags = baseMapper.selectList(
-            new LambdaQueryWrapper<Tag>().eq(Tag::getName, request.getName())
+                new LambdaQueryWrapper<Tag>().eq(Tag::getName, request.getName())
         );
         if (!existingTags.isEmpty()) {
             throw new BusinessException("标签名称已存在");
         }
-    
+
         Tag tag = new Tag();
         tag.setName(request.getName());
-    
+
         save(tag);
         log.info("创建标签：{}, ID: {}", request.getName(), tag.getId());
         return tag.getId();

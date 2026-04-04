@@ -57,10 +57,6 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.archive-page {
-  max-width: 900px;
-}
-
 .page-header {
   margin-bottom: 24px;
 }

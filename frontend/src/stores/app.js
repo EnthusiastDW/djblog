@@ -9,6 +9,8 @@ export const useAppStore = defineStore('app', () => {
   const sidebarCollapsed = ref(false)
   const bgImage = ref(localStorage.getItem('bgImage') || '')
   const bgOpacity = ref(parseFloat(localStorage.getItem('bgOpacity')) || 0.3)
+  const todayVisitors = ref(0)
+  const totalVisitors = ref(0)
 
   watch(theme, (newTheme) => {
     localStorage.setItem('theme', newTheme)
@@ -56,14 +58,27 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
+  async function fetchVisitStats() {
+    try {
+      const res = await api.get('/visit/stats')
+      todayVisitors.value = res.data?.todayVisitors ?? 0
+      totalVisitors.value = res.data?.totalVisitors ?? 0
+    } catch (e) {
+      console.error('获取访问统计失败', e)
+    }
+  }
+
   return {
     theme,
     sidebarCollapsed,
     bgImage,
     bgOpacity,
+    todayVisitors,
+    totalVisitors,
     toggleTheme,
     toggleSidebar,
     setBackground,
-    fetchSettings
+    fetchSettings,
+    fetchVisitStats
   }
 })

@@ -3,7 +3,7 @@
     <div class="header-container">
       <div class="header-left">
         <router-link to="/" class="logo">
-          <span class="logo-text">DJ Blog</span>
+          <span class="logo-text">{{ logoText }}</span>
         </router-link>
         <nav class="nav-menu">
           <router-link to="/" class="nav-item" :class="{ active: route.path === '/' }">
@@ -50,24 +50,40 @@
             </template>
           </el-dropdown>
         </template>
+        <el-icon class="mobile-menu-btn" @click="handleToggleSidebar">
+          <Fold />
+        </el-icon>
       </div>
     </div>
   </header>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useAppStore } from '@/stores/app'
-import { Search, Sunny, Moon } from '@element-plus/icons-vue'
+import { userApi } from '@/api/user'
+import { Search, Sunny, Moon, Fold } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const appStore = useAppStore()
 
+function handleToggleSidebar() {
+  appStore.toggleSidebar()
+}
+
+const blogUser = ref(null)
 const searchKeyword = ref('')
+
+const logoText = computed(() => {
+  if (blogUser.value) {
+    return `${blogUser.value.username}的博客`
+  }
+  return 'DJ Blog'
+})
 
 function toggleTheme() {
   appStore.toggleTheme()
@@ -83,6 +99,17 @@ async function handleLogout() {
   await userStore.logout()
   router.push('/')
 }
+
+onMounted(async () => {
+  try {
+    const res = await userApi.getFirstUser()
+    if (res.data?.records?.length > 0) {
+      blogUser.value = res.data.records[0]
+    }
+  } catch (e) {
+    console.error('获取博主信息失败', e)
+  }
+})
 </script>
 
 <style lang="scss" scoped>
@@ -91,7 +118,6 @@ async function handleLogout() {
 }
 
 .header-container {
-  max-width: 1400px;
   margin: 0 auto;
   height: 100%;
   display: flex;
@@ -136,7 +162,19 @@ async function handleLogout() {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+}
+
+.mobile-menu-btn {
+  display: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--el-text-color-regular);
+  transition: color 0.3s;
+
+  &:hover {
+    color: var(--el-color-primary);
+  }
 }
 
 .search-box {
@@ -157,7 +195,11 @@ async function handleLogout() {
   cursor: pointer;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 992px) {
+  .mobile-menu-btn {
+    display: block;
+  }
+
   .nav-menu {
     display: none;
   }

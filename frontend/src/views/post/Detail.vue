@@ -1,51 +1,59 @@
 <template>
   <div class="post-detail" v-loading="loading">
     <template v-if="post">
-      <article class="article">
-        <div class="article-main">
-          <header class="article-header">
-            <h1 class="article-title">{{ post.title }}</h1>
-            <div class="article-meta">
-              <span class="meta-item">
-                <el-icon><Calendar /></el-icon>
-                {{ formatDate(post.createdAt) }}
-              </span>
-              <span class="meta-item" v-if="post.author">
-                <router-link :to="`/user/${post.author.id}`" class="author-link">
-                  <el-avatar :size="20" :src="post.author.avatarUrl">
-                    {{ post.author.username?.charAt(0) }}
-                  </el-avatar>
-                  {{ post.author.username }}
+      <div class="article-layout">
+        <article class="article">
+          <div class="article-main">
+            <header class="article-header">
+              <h1 class="article-title">{{ post.title }}</h1>
+              <div class="article-meta">
+                <span class="meta-item">
+                  <el-icon><Calendar /></el-icon>
+                  {{ formatDate(post.createdAt) }}
+                </span>
+                <span class="meta-item" v-if="post.author">
+                  <router-link :to="`/user/${post.author.id}`" class="author-link">
+                    <el-avatar :size="20" :src="post.author.avatarUrl">
+                      {{ post.author.username?.charAt(0) }}
+                    </el-avatar>
+                    {{ post.author.username }}
+                  </router-link>
+                </span>
+                <span class="meta-item" v-if="post.categoryName">
+                  <el-icon><Folder /></el-icon>
+                  {{ post.categoryName }}
+                </span>
+                <span class="meta-item">
+                  <el-icon><View /></el-icon>
+                  {{ post.viewCount || 0 }} 次阅读
+                </span>
+              </div>
+              <div class="article-tags" v-if="post.tags && post.tags.length > 0">
+                <router-link
+                  v-for="tag in post.tags"
+                  :key="tag.id"
+                  :to="`/tag/${tag.id}`"
+                  class="tag-item"
+                >
+                  #{{ tag.name }}
                 </router-link>
-              </span>
-              <span class="meta-item" v-if="post.categoryName">
-                <el-icon><Folder /></el-icon>
-                {{ post.categoryName }}
-              </span>
-              <span class="meta-item">
-                <el-icon><View /></el-icon>
-                {{ post.viewCount || 0 }} 次阅读
-              </span>
-            </div>
-            <div class="article-tags" v-if="post.tags && post.tags.length > 0">
-              <router-link
-                v-for="tag in post.tags"
-                :key="tag.id"
-                :to="`/tag/${tag.id}`"
-                class="tag-item"
-              >
-                #{{ tag.name }}
-              </router-link>
-            </div>
-          </header>
+              </div>
+            </header>
 
-          <div class="article-cover" v-if="post.coverImage">
-            <el-image :src="post.coverImage" fit="cover" />
+            <div class="article-cover" v-if="post.coverImage">
+              <el-image :src="post.coverImage" fit="cover" />
+            </div>
           </div>
-        </div>
 
-        <div class="article-content" v-html="renderedContent"></div>
-      </article>
+          <div class="article-content" v-html="renderedContent"></div>
+        </article>
+
+        <!-- 目录侧边栏 - 使用渲染后的HTML内容以便正确解析标题 -->
+        <toc-sidebar 
+          :content="renderedContent || ''" 
+          class="toc-sidebar-wrapper"
+        />
+      </div>
 
       <section class="comment-section">
         <h3 class="section-title">评论 ({{ comments.length }})</h3>
@@ -182,23 +190,26 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, reactive, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, reactive, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useAppStore } from '@/stores/app'
 import { postApi } from '@/api/post'
 import { commentApi } from '@/api/comment'
 import { formatDate, fromNow } from '@/utils/format'
 import { Calendar, Folder, View } from '@element-plus/icons-vue'
 import MarkdownIt from 'markdown-it'
+import anchor from 'markdown-it-anchor'
 import hljs from 'highlight.js'
-import 'highlight.js/styles/github-dark.css'
 import { setCookie, getCookie } from '@/utils/cookie'
 import { ElMessage } from 'element-plus'
 import CommentReply from '@/components/CommentReply.vue'
+import TocSidebar from '@/components/TocSidebar.vue'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const appStore = useAppStore()
 
 const post = ref(null)
 const comments = ref([])
@@ -213,11 +224,67 @@ const showCommentDialog = ref(false)
 const showReplyDialog = ref(false)
 const currentReplyComment = ref(null)
 
-const anonymousForm = reactive({
-  authorName: getCookie('comment_author_name') || '',
-  authorEmail: getCookie('comment_author_email') || '',
-  content: ''
+// 动态主题映射
+const themeMap = {
+  dark: 'github-dark',
+  light: 'github'
+}
+
+// 动态加载 highlight.js 主题
+function loadHighlightTheme(theme) {
+  const themeName = themeMap[theme] || 'github-dark'
+  // 移除之前的主题
+  document.querySelectorAll('link[data-highlight-theme]').forEach(el => el.remove())
+  
+  const link = document.createElement('link')
+  link.rel = 'stylesheet'
+  link.href = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/${themeName}.min.css`
+  link.setAttribute('data-highlight-theme', 'true')
+  document.head.appendChild(link)
+}
+
+const md = new MarkdownIt({
+  highlight: (str, lang) => {
+    const language = lang || 'plaintext'
+    // 移除代码前后的空行
+    const trimmedStr = str.trim()
+    const highlighted = hljs.highlight(trimmedStr, { language }).value
+    
+    return `<div class="code-block-wrapper"><div class="code-block-header"><span class="code-block-language">${language}</span><button class="copy-btn" title="复制代码" onclick="copyCode(this)"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></div><pre><code class="hljs language-${language}">${highlighted}</code></pre></div>`
+  }
+}).use(anchor, {
+  slugify: (str) => str.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^\w\u4e00-\u9fa5-]/g, ''),
+  permalink: false
 })
+
+// 复制代码函数
+function copyCode(button) {
+  const codeBlock = button.closest('.code-block-wrapper')
+  const code = codeBlock.querySelector('code').textContent
+  
+  navigator.clipboard.writeText(code).then(() => {
+    button.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+    `
+    button.title = '已复制'
+    
+    ElMessage.success('代码已复制到剪贴板')
+    
+    setTimeout(() => {
+      button.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+      `
+      button.title = '复制代码'
+    }, 2000)
+  }).catch(() => {
+    ElMessage.error('复制失败，请手动复制')
+  })
+}
 
 const anonymousReplyForm = reactive({
   authorName: getCookie('comment_author_name') || '',
@@ -230,19 +297,6 @@ const rules = {
   authorEmail: [{ required: true, message: '请输入邮箱', trigger: 'blur' }, { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }],
   content: [{ required: true, message: '请输入评论内容', trigger: 'blur' }]
 }
-
-const md = new MarkdownIt({
-  highlight: (str, lang) => {
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return hljs.highlight(str, { language: lang }).value
-      } catch (e) {
-        console.error(e)
-      }
-    }
-    return ''
-  }
-})
 
 const renderedContent = computed(() => {
   if (!post.value?.content) return ''
@@ -428,21 +482,49 @@ async function submitAnonymousReply(comment) {
 
 onMounted(() => {
   fetchPostDetail()
+  // 加载当前主题的代码高亮样式
+  loadHighlightTheme(appStore.theme)
 })
 
-watch(() => route.params.slug, () => {
-  fetchPostDetail()
-})
-
-watch(() => route.params.id, () => {
-  fetchPostDetail()
+// 监听主题变化，动态切换代码高亮主题
+watch(() => appStore.theme, (newTheme) => {
+  loadHighlightTheme(newTheme)
 })
 </script>
 
 <style lang="scss" scoped>
 .post-detail {
-  max-width: 900px;
+  max-width: 1200px;
   margin: 0 auto;
+}
+
+.article-layout {
+  display: flex;
+  gap: 24px;
+}
+
+.article {
+  flex: 1;
+  min-width: 0;
+  background: var(--el-bg-color);
+  border-radius: 8px;
+  padding: 32px;
+  margin-bottom: 24px;
+}
+
+.toc-sidebar-wrapper {
+  width: 240px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .article-layout {
+    flex-direction: column;
+  }
+  
+  .toc-sidebar-wrapper {
+    width: 100%;
+  }
 }
 
 .article {
@@ -545,21 +627,82 @@ watch(() => route.params.id, () => {
   }
 
   :deep(pre) {
-    background: #1e1e1e;
-    padding: 16px;
-    border-radius: 8px;
-    overflow-x: auto;
     margin: 16px 0;
+    border-radius: 8px;
+    overflow: hidden;
+  }
 
-    code {
-      color: #d4d4d4;
-      font-size: 14px;
+  :deep(.code-block-wrapper) {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    
+    pre {
+      margin: 0;
+      padding: 16px 16px;
+      background: #1e1e1e;
+      overflow-x: auto;
+      border-radius: 0;
+      line-height: 1.5;
+      
+      code {
+        color: #d4d4d4;
+        font-size: 14px;
+        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        word-break: break-all;
+        background: transparent;
+        padding: 0;
+        display: block;
+      }
+    }
+  }
+
+  :deep(.code-block-header) {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    background: #2d2d2d;
+    border-bottom: 1px solid #404040;
+    border-radius: 0;
+    
+    .code-block-language {
+      font-size: 12px;
+      color: #9cdcfe;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .copy-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: #9cdcfe;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.3s;
+      
+      &:hover {
+        background: rgba(79, 195, 247, 0.1);
+        color: #4fc3f7;
+      }
+      
+      svg {
+        width: 16px;
+        height: 16px;
+      }
     }
   }
 
   :deep(code) {
     background: var(--el-fill-color-light);
-    padding: 2px 6px;
     border-radius: 4px;
     font-size: 14px;
   }

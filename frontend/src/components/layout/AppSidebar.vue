@@ -1,16 +1,49 @@
 <template>
   <aside class="app-sidebar">
+    <!-- 博主信息卡片 -->
+    <div class="profile-card">
+      <div class="profile-avatar">
+        <el-avatar v-if="blogUser?.avatarUrl" :size="80" :src="blogUser.avatarUrl" />
+        <el-avatar v-else :size="80">{{ blogUser?.username?.charAt(0) || '博' }}</el-avatar>
+      </div>
+      <h3 class="profile-name">{{ blogUser?.nickname || blogUser?.username || '博主' }}</h3>
+      <p class="profile-bio">{{ blogUser?.bio || '这个人很懒，什么都没留下' }}</p>
+      <div class="profile-contact-row" v-if="blogUser?.email || blogUser?.contactInfo">
+        <a v-if="blogUser?.email" :href="'mailto:' + blogUser.email" class="contact-icon" title="发送邮件">
+          <el-icon><Message /></el-icon>
+        </a>
+        <span class="contact-text" v-if="blogUser?.contactInfo">{{ blogUser.contactInfo }}</span>
+      </div>
+      <div class="profile-stats">
+        <div class="stat-item">
+          <span class="stat-value">{{ postCount }}</span>
+          <span class="stat-label">文章</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">{{ categoryCount }}</span>
+          <span class="stat-label">分类</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">{{ tagCount }}</span>
+          <span class="stat-label">标签</span>
+        </div>
+      </div>
+    </div>
+
     <div class="sidebar-section">
       <h3 class="section-title">分类</h3>
       <div class="category-list">
         <router-link
-          v-for="category in categories"
+          v-for="category in displayCategories"
           :key="category.id"
           :to="`/category/${category.id}`"
           class="category-item"
         >
           <span class="category-name">{{ category.name }}</span>
           <span class="category-count">{{ category.postCount || 0 }}</span>
+        </router-link>
+        <router-link v-if="categoryCount > 10" to="/categories" class="more-link">
+          更多...
         </router-link>
         <el-empty v-if="categories.length === 0" description="暂无分类" :image-size="60" />
       </div>
@@ -20,7 +53,7 @@
       <h3 class="section-title">热门标签</h3>
       <div class="tag-cloud">
         <router-link
-          v-for="tag in tags"
+          v-for="tag in displayTags"
           :key="tag.id"
           :to="`/tag/${tag.id}`"
           class="tag-item"
@@ -28,12 +61,15 @@
         >
           {{ tag.name }}
         </router-link>
+        <router-link v-if="tagCount > 10" to="/tags" class="more-link">
+          更多...
+        </router-link>
         <el-empty v-if="tags.length === 0" description="暂无标签" :image-size="60" />
       </div>
     </div>
 
     <div class="sidebar-section">
-      <h3 class="section-title">最新文章</h3>
+      <h3 class="section-title">热门文章</h3>
       <div class="recent-posts">
         <router-link
           v-for="post in recentPosts"
@@ -51,26 +87,50 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { categoryApi } from '@/api/category'
 import { tagApi } from '@/api/tag'
 import { postApi } from '@/api/post'
+import { userApi } from '@/api/user'
 import { formatDate } from '@/utils/format'
+import { Message } from '@element-plus/icons-vue'
 
+const blogUser = ref(null)
 const categories = ref([])
 const tags = ref([])
 const recentPosts = ref([])
+const postCount = ref(0)
+const categoryCount = ref(0)
+const tagCount = ref(0)
+
+const displayCategories = computed(() => {
+  return categories.value.slice(0, 10)
+})
+
+const displayTags = computed(() => {
+  return tags.value.slice(0, 10)
+})
 
 onMounted(async () => {
   try {
-    const [categoryRes, tagRes, postRes] = await Promise.all([
+    const [userRes, categoryRes, tagRes, postListRes] = await Promise.all([
+      userApi.getFirstUser(),
       categoryApi.getAll(),
       tagApi.getAll(),
-      postApi.getList({ size: 5 })
+      postApi.getList({ current: 1, size: 0 })
     ])
+    if (userRes.data?.records?.length > 0) {
+      blogUser.value = userRes.data.records[0]
+    }
     categories.value = categoryRes.data || []
-    tags.value = (tagRes.data || []).slice(0, 20)
-    recentPosts.value = postRes.data.records || []
+    categoryCount.value = categoryRes.data?.length || 0
+    tags.value = (tagRes.data || []).slice(0, 10)
+    tagCount.value = tagRes.data?.length || 0
+    postCount.value = postListRes.data.total || 0
+    
+    // 单独获取热门文章用于展示
+    const popularRes = await postApi.getPopular({ size: 10 })
+    recentPosts.value = popularRes.data || []
   } catch (e) {
     console.error('加载侧边栏数据失败', e)
   }
@@ -86,7 +146,88 @@ function getTagSize(count) {
 
 <style lang="scss" scoped>
 .app-sidebar {
-  height: 100%;
+  padding-top: 0;
+}
+
+.profile-card {
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.profile-avatar {
+  margin-bottom: 16px;
+}
+
+.profile-name {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  margin-bottom: 8px;
+}
+
+.profile-bio {
+  font-size: 14px;
+  color: var(--el-text-color-secondary);
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+.profile-contact-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+}
+
+.contact-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--el-fill-color-light);
+  color: var(--el-text-color-secondary);
+  text-decoration: none;
+  transition: all 0.3s;
+
+  &:hover {
+    color: var(--el-color-primary);
+    background: var(--el-color-primary-light-9);
+  }
+}
+
+.contact-text {
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+}
+
+.profile-stats {
+  display: flex;
+  justify-content: space-around;
+  padding-top: 16px;
+  border-top: 1px solid var(--el-border-color-lighter);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
 }
 
 .sidebar-section {
@@ -186,5 +327,19 @@ function getTagSize(count) {
   font-size: 12px;
   color: var(--el-text-color-secondary);
   white-space: nowrap;
+}
+
+.more-link {
+  display: block;
+  text-align: center;
+  padding: 8px;
+  color: var(--el-color-primary);
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.3s;
+  
+  &:hover {
+    color: var(--el-color-primary-light-3);
+  }
 }
 </style>
