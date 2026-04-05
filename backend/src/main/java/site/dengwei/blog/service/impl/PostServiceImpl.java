@@ -183,8 +183,25 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
 
     @Override
     public Page<PostListDTO> getPostListWithRelations(Page<Post> page, Post queryParam) {
+        return getPostListWithRelationsInternal(page, queryParam, true);
+    }
+
+    @Override
+    public Page<PostListDTO> getAllPostListWithRelations(Page<Post> page, Post queryParam) {
+        return getPostListWithRelationsInternal(page, queryParam, false);
+    }
+
+    /**
+     * 获取文章列表（内部方法）
+     * @param page 分页参数
+     * @param queryParam 查询条件
+     * @param filterPublished 是否只查询已发布的文章
+     */
+    private Page<PostListDTO> getPostListWithRelationsInternal(Page<Post> page, Post queryParam, boolean filterPublished) {
         LambdaQueryWrapper<Post> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Post::getStatus, PostStatus.PUBLISHED);
+        if (filterPublished) {
+            wrapper.eq(Post::getStatus, PostStatus.PUBLISHED);
+        }
         
         if (queryParam != null) {
             if (queryParam.getStatus() != null) {
@@ -202,35 +219,6 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         Page<Post> postPage = page(page, wrapper);
         
         // 转换为 DTO 并填充分类和标签信息
-        List<PostListDTO> dtoList = postPage.getRecords().stream()
-                .map(this::convertToDTO)
-                .toList();
-        
-        Page<PostListDTO> dtoPage = new Page<>(postPage.getCurrent(), postPage.getSize(), postPage.getTotal());
-        dtoPage.setRecords(dtoList);
-        
-        return dtoPage;
-    }
-
-    @Override
-    public Page<PostListDTO> getAllPostListWithRelations(Page<Post> page, Post queryParam) {
-        LambdaQueryWrapper<Post> wrapper = new LambdaQueryWrapper<>();
-        
-        if (queryParam != null) {
-            if (queryParam.getStatus() != null) {
-                wrapper.eq(Post::getStatus, queryParam.getStatus());
-            }
-            if (queryParam.getCategoryId() != null) {
-                wrapper.eq(Post::getCategoryId, queryParam.getCategoryId());
-            }
-            if (StringUtils.hasText(queryParam.getTitle())) {
-                wrapper.like(Post::getTitle, queryParam.getTitle());
-            }
-        }
-        wrapper.orderByDesc(Post::getCreatedAt);
-        
-        Page<Post> postPage = page(page, wrapper);
-        
         List<PostListDTO> dtoList = postPage.getRecords().stream()
                 .map(this::convertToDTO)
                 .toList();
@@ -310,7 +298,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
 
     @Override
     public boolean saveDraft(SaveDraftRequest request) {
-        Post post = buildPostFromRequest(request, PostStatus.DRAFT);
+        Post post = buildPostFromDraftOrPublishRequest(request, PostStatus.DRAFT);
         log.info("保存草稿，标题: {}", request.getTitle());
         boolean result = saveOrUpdate(post);
         if (result && request.getTagIds() != null && request.getTagIds().length > 0) {
@@ -321,7 +309,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
 
     @Override
     public boolean publish(PublishRequest request) {
-        Post post = buildPostFromPublishRequest(request, PostStatus.PUBLISHED);
+        Post post = buildPostFromDraftOrPublishRequest(request, PostStatus.PUBLISHED);
         post.setPublishedAt(LocalDateTime.now());
         log.info("发布文章，标题: {}", request.getTitle());
         boolean result = saveOrUpdate(post);
@@ -363,25 +351,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         return removeByIds(idList);
     }
 
-    private Post buildPostFromRequest(SaveDraftRequest request, PostStatus status) {
-        Post post = new Post();
-        if (request.getId() != null) {
-            post = getById(request.getId());
-            if (post == null) {
-                throw new BusinessException("文章不存在");
-            }
-        }
-        post.setTitle(request.getTitle());
-        post.setContent(request.getContent());
-        post.setSlug(processSlug(request.getTitle(), request.getSlug(), request.getId()));
-        post.setSummary(request.getSummary());
-        post.setCoverImage(request.getCoverImage());
-        post.setCategoryId(request.getCategoryId());
-        post.setStatus(status);
-        return post;
-    }
-
-    private Post buildPostFromPublishRequest(PublishRequest request, PostStatus status) {
+    private Post buildPostFromDraftOrPublishRequest(BasePostRequest request, PostStatus status) {
         Post post = new Post();
         if (request.getId() != null) {
             post = getById(request.getId());
@@ -608,8 +578,6 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
 
         return tagIds;
     }
-
-
 
     /**
      * 解析日期时间字符串

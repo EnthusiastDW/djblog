@@ -65,13 +65,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     @Override
     @CacheEvict(value = "categories", key = "'all'")
     public Long createCategory(CreateCategoryRequest request) {
-        // 检查分类名称是否已存在
-        List<Category> existingCategories = baseMapper.selectList(
-                new LambdaQueryWrapper<Category>().eq(Category::getName, request.getName())
-        );
-        if (!existingCategories.isEmpty()) {
-            throw new BusinessException("分类名称已存在");
-        }
+        checkCategoryNameExists(request.getName(), null);
 
         Category category = new Category();
         category.setName(request.getName());
@@ -86,6 +80,8 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     @Override
     @CacheEvict(value = "categories", key = "'all'")
     public boolean updateCategory(UpdateCategoryRequest request) {
+        checkCategoryNameExists(request.getName(), request.getId());
+        
         Category category = getByIdOrThrow(request.getId());
         category.setName(request.getName());
         category.setDescription(request.getDescription());
@@ -93,6 +89,22 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
 
         log.info("更新分类，ID: {}", request.getId());
         return updateById(category);
+    }
+
+    /**
+     * 检查分类名称是否已存在
+     * @param name 分类名称
+     * @param excludeId 排除的ID（更新时使用）
+     */
+    private void checkCategoryNameExists(String name, Long excludeId) {
+        LambdaQueryWrapper<Category> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Category::getName, name);
+        if (excludeId != null) {
+            wrapper.ne(Category::getId, excludeId);
+        }
+        if (baseMapper.selectCount(wrapper) > 0) {
+            throw new BusinessException("分类名称已存在");
+        }
     }
 
     @Override

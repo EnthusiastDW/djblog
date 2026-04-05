@@ -63,13 +63,7 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
     @Override
     @CacheEvict(value = "tags", key = "'all'")
     public Long createTag(CreateTagRequest request) {
-        // 检查标签名称是否已存在
-        List<Tag> existingTags = baseMapper.selectList(
-                new LambdaQueryWrapper<Tag>().eq(Tag::getName, request.getName())
-        );
-        if (!existingTags.isEmpty()) {
-            throw new BusinessException("标签名称已存在");
-        }
+        checkTagNameExists(request.getName(), null);
 
         Tag tag = new Tag();
         tag.setName(request.getName());
@@ -82,11 +76,29 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
     @Override
     @CacheEvict(value = "tags", key = "'all'")
     public boolean updateTag(UpdateTagRequest request) {
+        checkTagNameExists(request.getName(), request.getId());
+        
         Tag tag = getByIdOrThrow(request.getId());
         tag.setName(request.getName());
 
         log.info("更新标签，ID: {}", request.getId());
         return updateById(tag);
+    }
+
+    /**
+     * 检查标签名称是否已存在
+     * @param name 标签名称
+     * @param excludeId 排除的ID（更新时使用）
+     */
+    private void checkTagNameExists(String name, Long excludeId) {
+        LambdaQueryWrapper<Tag> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Tag::getName, name);
+        if (excludeId != null) {
+            wrapper.ne(Tag::getId, excludeId);
+        }
+        if (baseMapper.selectCount(wrapper) > 0) {
+            throw new BusinessException("标签名称已存在");
+        }
     }
 
     @Override
