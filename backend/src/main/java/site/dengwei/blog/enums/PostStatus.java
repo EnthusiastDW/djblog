@@ -28,7 +28,12 @@ public enum PostStatus {
     /**
      * 已下架
      */
-    UNPUBLISHED("UNPUBLISHED", "已下架");
+    UNPUBLISHED("UNPUBLISHED", "已下架"),
+
+    /**
+     * 已删除（软删除）
+     */
+    DELETED("DELETED", "已删除");
 
     /**
      * 存储到数据库的值

@@ -75,7 +75,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setAvatarUrl(request.getAvatar());
+        user.setAvatarUrl(request.getAvatarUrl());
         return save(user);
     }
 
@@ -86,8 +86,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (request.getEmail() != null) {
             user.setEmail(request.getEmail());
         }
-        if (request.getAvatar() != null) {
-            user.setAvatarUrl(request.getAvatar());
+        if (request.getAvatarUrl() != null) {
+            user.setAvatarUrl(request.getAvatarUrl());
         }
         if (request.getContactInfo() != null) {
             user.setContactInfo(request.getContactInfo());

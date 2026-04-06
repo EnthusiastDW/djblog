@@ -32,15 +32,32 @@ test.describe('文章编辑页面测试', () => {
     await expect(page.locator('button').first()).toBeVisible()
   })
 
-  test('分类和标签选择器存在', async ({ page }) => {
+  test('分类树形选择器存在', async ({ page }) => {
     // 导航到文章编辑页面
     await page.goto('/admin/posts/write')
     
     // 等待页面加载
     await page.waitForTimeout(2000)
     
-    // 验证分类和标签选择器存在
-    await expect(page.locator('div.el-select').first()).toBeVisible()
+    // 验证分类树形选择器存在（el-tree-select 或 el-select）
+    const treeSelect = page.locator('.el-tree-select').first()
+    const fallbackSelect = page.locator('.el-select').first()
+    const hasTreeSelect = await treeSelect.isVisible().catch(() => false)
+    const hasSelect = await fallbackSelect.isVisible().catch(() => false)
+    expect(hasTreeSelect || hasSelect).toBeTruthy()
+  })
+
+  test('分类选择器旁边应有管理分类按钮', async ({ page }) => {
+    // 导航到文章编辑页面
+    await page.goto('/admin/posts/write')
+    
+    // 等待页面加载
+    await page.waitForTimeout(2000)
+    
+    // 验证管理分类按钮存在
+    const manageBtn = page.locator('button:has-text("管理分类")').first()
+    const hasManageBtn = await manageBtn.isVisible().catch(() => false)
+    expect(hasManageBtn).toBeTruthy()
   })
 
   test('表单提交按钮存在', async ({ page }) => {

@@ -56,6 +56,12 @@ public class PostListDTO implements Serializable {
     private Long authorId;
     
     /**
+     * 作者名称（关联字段）
+     */
+    @TableField(exist = false)
+    private String authorName;
+    
+    /**
      * 分类 ID
      */
     private Long categoryId;

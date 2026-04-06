@@ -70,7 +70,6 @@ onMounted(() => {
 }
 
 .tag-cloud {
-  background: var(--el-bg-color);
   border-radius: 8px;
   padding: 32px;
   display: flex;

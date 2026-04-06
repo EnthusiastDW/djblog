@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -130,14 +131,13 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     }
 
     @Override
-    public Page<Post> searchPostsAdvanced(String keyword, String title, String summary, Long categoryId, Long tagId, Long authorId, Page<Post> page, PostStatus status) {
+    public Page<PostListDTO> searchPostsAdvanced(String keyword, String title, String summary, Long categoryId, Long tagId, Long authorId, Page<Post> page, PostStatus status) {
         LambdaQueryWrapper<Post> wrapper = new LambdaQueryWrapper<>();
         
         if (status != null) {
             wrapper.eq(Post::getStatus, status);
         }
         
-        // 关键词搜索（标题、内容、摘要）
         if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w
                 .like(Post::getTitle, keyword.trim())
@@ -148,22 +148,18 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
             );
         }
         
-        // 标题搜索
         if (StringUtils.hasText(title)) {
             wrapper.like(Post::getTitle, title.trim());
         }
         
-        // 摘要搜索
         if (StringUtils.hasText(summary)) {
             wrapper.like(Post::getSummary, summary.trim());
         }
         
-        // 分类搜索
         if (categoryId != null) {
             wrapper.eq(Post::getCategoryId, categoryId);
         }
         
-        // 标签搜索（需要关联查询）
         if (tagId != null) {
             List<Long> postIds = postMapper.selectPostIdsByTagId(tagId);
             if (postIds.isEmpty()) {
@@ -172,13 +168,20 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
             wrapper.in(Post::getId, postIds);
         }
         
-        // 作者搜索
         if (authorId != null) {
             wrapper.eq(Post::getAuthorId, authorId);
         }
         
         wrapper.orderByDesc(Post::getPublishedAt);
-        return page(page, wrapper);
+        Page<Post> postPage = page(page, wrapper);
+        
+        List<PostListDTO> dtoList = postPage.getRecords().stream()
+                .map(this::convertToDTO)
+                .toList();
+        
+        Page<PostListDTO> dtoPage = new Page<>(postPage.getCurrent(), postPage.getSize(), postPage.getTotal());
+        dtoPage.setRecords(dtoList);
+        return dtoPage;
     }
 
     @Override
@@ -189,6 +192,27 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     @Override
     public Page<PostListDTO> getAllPostListWithRelations(Page<Post> page, Post queryParam) {
         return getPostListWithRelationsInternal(page, queryParam, false);
+    }
+
+    @Override
+    public Page<PostListDTO> getPostListWithRelationsByCategoryIds(Page<Post> page, List<Long> categoryIds) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return new Page<>(page.getCurrent(), page.getSize(), 0);
+        }
+        LambdaQueryWrapper<Post> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Post::getStatus, PostStatus.PUBLISHED);
+        wrapper.in(Post::getCategoryId, categoryIds);
+        wrapper.orderByDesc(Post::getCreatedAt);
+
+        Page<Post> postPage = page(page, wrapper);
+
+        List<PostListDTO> dtoList = postPage.getRecords().stream()
+                .map(this::convertToDTO)
+                .toList();
+
+        Page<PostListDTO> dtoPage = new Page<>(postPage.getCurrent(), postPage.getSize(), postPage.getTotal());
+        dtoPage.setRecords(dtoList);
+        return dtoPage;
     }
 
     /**
@@ -236,7 +260,13 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         PostListDTO dto = new PostListDTO();
         BeanUtils.copyProperties(post, dto);
         
-        // 填充分类信息
+        if (post.getAuthorId() != null) {
+            var user = userMapper.selectById(post.getAuthorId());
+            if (user != null) {
+                dto.setAuthorName(user.getUsername());
+            }
+        }
+        
         if (post.getCategoryId() != null) {
             Category category = categoryMapper.selectById(post.getCategoryId());
             if (category != null) {
@@ -244,11 +274,9 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
             }
         }
         
-        // 填充分类标签
         List<Tag> tags = postMapper.selectTagsByPostId(post.getId());
         dto.setTags(tags);
         
-        // 设置浏览次数
         dto.setViewCount(post.getViewCount());
         
         return dto;
@@ -292,8 +320,16 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     }
 
     @Override
-    public Page<Post> getPostsByArchive(String yearMonth, Page<Post> page) {
-        return postMapper.selectPostsByArchive(yearMonth, page);
+    public Page<PostListDTO> getPostsByArchive(String yearMonth, Page<Post> page) {
+        Page<Post> postPage = postMapper.selectPostsByArchive(yearMonth, page);
+        
+        List<PostListDTO> dtoList = postPage.getRecords().stream()
+                .map(this::convertToDTO)
+                .toList();
+        
+        Page<PostListDTO> dtoPage = new Page<>(postPage.getCurrent(), postPage.getSize(), postPage.getTotal());
+        dtoPage.setRecords(dtoList);
+        return dtoPage;
     }
 
     @Override
@@ -308,6 +344,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     }
 
     @Override
+    @CacheEvict(value = "categories", allEntries = true)
     public boolean publish(PublishRequest request) {
         Post post = buildPostFromDraftOrPublishRequest(request, PostStatus.PUBLISHED);
         post.setPublishedAt(LocalDateTime.now());
@@ -320,6 +357,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     }
 
     @Override
+    @CacheEvict(value = "categories", allEntries = true)
     public boolean createPost(CreatePostRequest request) {
         Post post = buildPostFromCreateRequest(request);
         log.info("创建文章，标题: {}", request.getTitle());
@@ -331,6 +369,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     }
 
     @Override
+    @CacheEvict(value = "categories", allEntries = true)
     public boolean updatePost(UpdatePostRequest request) {
         Post post = getByIdOrThrow(request.getId());
         updatePostFromRequest(post, request);
@@ -343,11 +382,66 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     }
 
     @Override
+    @CacheEvict(value = "categories", allEntries = true)
     public boolean deletePosts(List<Long> idList) {
         if (idList == null || idList.isEmpty()) {
             throw new BusinessException("请选择要删除的文章");
         }
-        log.info("删除文章，ID列表: {}", idList);
+        log.info("软删除文章，ID列表: {}", idList);
+        List<Post> posts = listByIds(idList);
+        for (Post post : posts) {
+            post.setStatus(PostStatus.DELETED);
+        }
+        return updateBatchById(posts);
+    }
+
+    @Override
+    @CacheEvict(value = "categories", allEntries = true)
+    public boolean restorePosts(List<Long> idList) {
+        if (idList == null || idList.isEmpty()) {
+            throw new BusinessException("请选择要恢复的文章");
+        }
+        log.info("恢复文章，ID列表: {}", idList);
+        List<Post> posts = listByIds(idList);
+        for (Post post : posts) {
+            if (post.getStatus() == PostStatus.DELETED) {
+                post.setStatus(PostStatus.DRAFT);
+            }
+        }
+        return updateBatchById(posts);
+    }
+
+    @Override
+    public Page<PostListDTO> getDeletedPosts(Page<Post> page, Post queryParam) {
+        LambdaQueryWrapper<Post> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Post::getStatus, PostStatus.DELETED);
+        
+        if (queryParam != null) {
+            if (StringUtils.hasText(queryParam.getTitle())) {
+                wrapper.like(Post::getTitle, queryParam.getTitle());
+            }
+        }
+        wrapper.orderByDesc(Post::getUpdatedAt);
+        
+        Page<Post> postPage = page(page, wrapper);
+        
+        List<PostListDTO> dtoList = postPage.getRecords().stream()
+                .map(this::convertToDTO)
+                .toList();
+        
+        Page<PostListDTO> dtoPage = new Page<>(postPage.getCurrent(), postPage.getSize(), postPage.getTotal());
+        dtoPage.setRecords(dtoList);
+        
+        return dtoPage;
+    }
+
+    @Override
+    @CacheEvict(value = "categories", allEntries = true)
+    public boolean permanentDelete(List<Long> idList) {
+        if (idList == null || idList.isEmpty()) {
+            throw new BusinessException("请选择要彻底删除的文章");
+        }
+        log.info("彻底删除文章，ID列表: {}", idList);
         return removeByIds(idList);
     }
 

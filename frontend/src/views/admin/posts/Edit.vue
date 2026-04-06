@@ -18,34 +18,33 @@
       </el-form-item>
       
       <el-form-item label="摘要" prop="summary">
-        <div class="summary-input">
-          <el-input v-model="form.summary" type="textarea" :rows="2" placeholder="请输入文章摘要" />
-          <el-button type="primary" link :loading="summaryLoading" @click="handleGenerateSummary">
-            <el-icon><MagicStick /></el-icon>
-            AI生成
-          </el-button>
-        </div>
+        <el-input v-model="form.summary" type="textarea" :rows="2" placeholder="请输入文章摘要" />
+        <el-button type="primary" link :loading="summaryLoading" @click="handleGenerateSummary">
+          <el-icon><MagicStick /></el-icon>
+          AI生成
+        </el-button>
       </el-form-item>
 
       <!-- 分类选择 -->
       <el-form-item label="分类" prop="categoryId">
-        <el-select
-          v-model="form.categoryId"
-          placeholder="请选择分类或输入新分类"
-          filterable
-          allow-create
-          default-first-option
-          :loading="categoryLoading"
-          style="width: 100%;"
-          @change="handleCategoryChange"
-        >
-          <el-option
-            v-for="category in categories"
-            :key="category.id"
-            :label="category.name"
-            :value="category.id"
+        <div class="category-select-wrapper">
+          <el-tree-select
+            v-model="form.categoryId"
+            :data="categoryTree"
+            :props="{ label: 'name', value: 'id', children: 'children' }"
+            placeholder="请选择分类"
+            check-strictly
+            clearable
+            filterable
+            :render-after-expand="false"
+            :loading="categoryLoading"
+            style="width: 100%;"
           />
-        </el-select>
+          <el-button type="primary" link class="manage-category-btn" @click="router.push('/admin/categories')">
+            <el-icon><Setting /></el-icon>
+            管理分类
+          </el-button>
+        </div>
       </el-form-item>
 
       <!-- 标签选择 -->
@@ -107,24 +106,27 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAppStore } from '@/stores/app'
 import { postApi } from '@/api/post'
 import { categoryApi } from '@/api/category'
 import { tagApi } from '@/api/tag'
-import { ArrowLeft, MagicStick } from '@element-plus/icons-vue'
+import { ArrowLeft, MagicStick, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import MarkdownIt from 'markdown-it'
-import hljs from 'highlight.js'
+import { createHighlightWithWrapper } from '@/utils/highlight'
 
 const route = useRoute()
 const router = useRouter()
+const appStore = useAppStore()
 
 const formRef = ref(null)
 const editorRef = ref(null)
 const saving = ref(false)
 const publishing = ref(false)
 const categories = ref([])
+const categoryTree = ref([])
 const tags = ref([])
 const categoryLoading = ref(false)
 const tagLoading = ref(false)
@@ -147,17 +149,24 @@ const rules = {
   content: [{ required: true, message: '请输入文章内容', trigger: 'blur' }]
 }
 
+const themeMap = {
+  dark: 'atom-one-dark',
+  light: 'atom-one-light'
+}
+
+function loadHighlightTheme(theme) {
+  const themeName = themeMap[theme] || 'atom-one-dark'
+  document.querySelectorAll('link[data-highlight-theme]').forEach(el => el.remove())
+  
+  const link = document.createElement('link')
+  link.rel = 'stylesheet'
+  link.href = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/${themeName}.min.css`
+  link.setAttribute('data-highlight-theme', 'true')
+  document.head.appendChild(link)
+}
+
 const md = new MarkdownIt({
-  highlight: (str, lang) => {
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return hljs.highlight(str, { language: lang }).value
-      } catch (e) {
-        console.error(e)
-      }
-    }
-    return ''
-  }
+  highlight: createHighlightWithWrapper()
 })
 
 const renderedContent = computed(() => {
@@ -166,11 +175,14 @@ const renderedContent = computed(() => {
 })
 
 async function fetchCategories() {
+  categoryLoading.value = true
   try {
-    const res = await categoryApi.getList({ size: 100 })
-    categories.value = res.data.records || []
+    const res = await categoryApi.getTree()
+    categoryTree.value = res.data || []
   } catch (e) {
     console.error('获取分类失败', e)
+  } finally {
+    categoryLoading.value = false
   }
 }
 
@@ -184,38 +196,6 @@ async function fetchTags() {
 }
 
 
-
-async function handleCategoryChange(value) {
-  // 检查是否是新创建的分类（字符串）
-  if (typeof value === 'string') {
-    const categoryName = value.trim()
-    if (!categoryName) return
-
-    categoryLoading.value = true
-    try {
-      // 检查是否已存在相同名称的分类
-      const existingCategory = categories.value.find(c => c.name === categoryName)
-      if (existingCategory) {
-        form.categoryId = existingCategory.id
-        ElMessage.info('该分类已存在')
-        return
-      }
-
-      // 创建新分类
-      const res = await categoryApi.create({ name: categoryName })
-      const newId = res.data
-      categories.value.push({ id: newId, name: categoryName })
-      form.categoryId = newId
-      ElMessage.success('分类创建成功')
-    } catch (e) {
-      console.error('创建分类失败', e)
-      ElMessage.error(e.response?.data?.message || '创建分类失败')
-      form.categoryId = null
-    } finally {
-      categoryLoading.value = false
-    }
-  }
-}
 
 async function handleTagChange(values) {
   // 处理标签变化，检查是否有新创建的标签
@@ -352,13 +332,20 @@ async function handlePublish() {
 onMounted(() => {
   fetchCategories()
   fetchTags()
+  loadHighlightTheme(appStore.theme)
   if (isEdit.value) {
     fetchPost()
   }
 })
+
+watch(() => appStore.theme, (newTheme) => {
+  loadHighlightTheme(newTheme)
+})
 </script>
 
 <style lang="scss" scoped>
+@import '@/assets/styles/_markdown.scss';
+
 .admin-post-edit {
   .page-header {
     display: flex;
@@ -377,6 +364,22 @@ onMounted(() => {
   .header-actions {
     display: flex;
     gap: 8px;
+  }
+
+  .category-select-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+
+    .el-tree-select {
+      flex: 1;
+    }
+
+    .manage-category-btn {
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
   }
 
   .editor-container {
@@ -416,38 +419,12 @@ onMounted(() => {
     padding: 16px;
     border-left: 1px solid var(--el-border-color);
     overflow-y: auto;
-    line-height: 1.8;
+    @include markdown-content;
+    @include code-theme-dark;
+  }
 
-    :deep(h1), :deep(h2), :deep(h3), :deep(h4) {
-      margin: 16px 0 8px;
-      font-weight: 600;
-    }
-
-    :deep(pre) {
-      background: #1e1e1e;
-      padding: 12px;
-      border-radius: 4px;
-      overflow-x: auto;
-
-      code {
-        color: #d4d4d4;
-        font-size: 13px;
-      }
-    }
-
-    :deep(code) {
-      background: var(--el-fill-color-light);
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 13px;
-    }
-
-    :deep(blockquote) {
-      border-left: 3px solid var(--el-color-primary);
-      padding-left: 12px;
-      margin: 8px 0;
-      color: var(--el-text-color-secondary);
-    }
+  html.light .editor-preview {
+    @include code-theme-light;
   }
 }
 </style>

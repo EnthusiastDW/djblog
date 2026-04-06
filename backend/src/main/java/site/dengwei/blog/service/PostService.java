@@ -42,7 +42,7 @@ public interface PostService extends IService<Post> {
     /**
      * 高级搜索（支持标题、摘要、标签、分类、作者）
      */
-    Page<Post> searchPostsAdvanced(String keyword, String title, String summary, Long categoryId, Long tagId, Long authorId, Page<Post> page, PostStatus status);
+    Page<PostListDTO> searchPostsAdvanced(String keyword, String title, String summary, Long categoryId, Long tagId, Long authorId, Page<Post> page, PostStatus status);
     
     /**
      * 获取文章列表（带分类和标签信息）
@@ -53,6 +53,11 @@ public interface PostService extends IService<Post> {
      * 获取所有文章列表（管理后台用，不过滤状态）
      */
     Page<PostListDTO> getAllPostListWithRelations(Page<Post> page, Post queryParam);
+    
+    /**
+     * 获取文章列表（带分类和标签信息，支持按多个分类ID查询）
+     */
+    Page<PostListDTO> getPostListWithRelationsByCategoryIds(Page<Post> page, List<Long> categoryIds);
     
     /**
      * 分页查询草稿文章
@@ -72,7 +77,7 @@ public interface PostService extends IService<Post> {
     /**
      * 根据年月查询文章列表
      */
-    Page<Post> getPostsByArchive(String yearMonth, Page<Post> page);
+    Page<PostListDTO> getPostsByArchive(String yearMonth, Page<Post> page);
 
     /**
      * 获取文章详情及其关联信息
@@ -100,9 +105,24 @@ public interface PostService extends IService<Post> {
     boolean updatePost(UpdatePostRequest request);
 
     /**
-     * 删除文章
+     * 删除文章（软删除）
      */
     boolean deletePosts(List<Long> idList);
+
+    /**
+     * 恢复已删除的文章
+     */
+    boolean restorePosts(List<Long> idList);
+
+    /**
+     * 获取已删除的文章列表
+     */
+    Page<PostListDTO> getDeletedPosts(Page<Post> page, Post queryParam);
+
+    /**
+     * 彻底删除文章（物理删除）
+     */
+    boolean permanentDelete(List<Long> idList);
 
     /**
      * AI 生成摘要

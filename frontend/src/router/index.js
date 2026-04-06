@@ -44,9 +44,9 @@ const routes = [
       },
       {
         path: 'category/:id',
-        name: 'CategoryPosts',
-        component: () => import('@/views/category/Posts.vue'),
-        meta: { title: '分类文章' }
+        redirect: to => {
+          return { path: '/categories', query: { categoryId: to.params.id } }
+        }
       },
       {
         path: 'tags',

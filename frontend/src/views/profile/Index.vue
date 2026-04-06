@@ -1,7 +1,7 @@
 <template>
   <div class="profile-page">
     <div class="profile-header">
-      <el-avatar :size="80" :src="userStore.user?.avatar">
+      <el-avatar :size="80" :src="userStore.user?.avatarUrl">
         {{ userStore.user?.username?.charAt(0) || 'U' }}
       </el-avatar>
       <div class="profile-info">
@@ -73,7 +73,7 @@ async function handleUpdate() {
     await userApi.update({
       id: userStore.user.id,
       email: form.email,
-      avatar: form.avatarUrl,
+      avatarUrl: form.avatarUrl,
       contactInfo: form.contactInfo,
       bio: form.bio
     })

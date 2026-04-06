@@ -70,6 +70,17 @@ public interface PostMapper extends BaseMapper<Post> {
     @Select("SELECT COUNT(*) FROM post WHERE category_id = #{categoryId} AND status = 'PUBLISHED'")
     Long countByCategoryId(@Param("categoryId") Long categoryId);
 
+    /**
+     * 根据分类 ID 列表查询已发布文章数量（用于子分类文章数汇总）
+     */
+    @Select("<script>" +
+            "SELECT COUNT(*) FROM post WHERE status = 'PUBLISHED' AND category_id IN " +
+            "<foreach collection='categoryIds' item='id' open='(' separator=',' close=')'>" +
+            "#{id}" +
+            "</foreach>" +
+            "</script>")
+    Long countByCategoryIds(@Param("categoryIds") List<Long> categoryIds);
+
     @Select("SELECT COUNT(*) FROM post_tag WHERE tag_id = #{tagId}")
     Long countByTagId(@Param("tagId") Long tagId);
 

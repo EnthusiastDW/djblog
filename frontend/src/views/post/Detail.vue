@@ -19,9 +19,11 @@
                     {{ post.author.username }}
                   </router-link>
                 </span>
-                <span class="meta-item" v-if="post.categoryName">
+                <span class="meta-item" v-if="post.categoryId">
                   <el-icon><Folder /></el-icon>
-                  {{ post.categoryName }}
+                  <router-link :to="`/categories?categoryId=${post.categoryId}`" class="category-link">
+                    {{ post.categoryPath || post.categoryName }}
+                  </router-link>
                 </span>
                 <span class="meta-item">
                   <el-icon><View /></el-icon>
@@ -196,11 +198,12 @@ import { useUserStore } from '@/stores/user'
 import { useAppStore } from '@/stores/app'
 import { postApi } from '@/api/post'
 import { commentApi } from '@/api/comment'
+import { categoryApi } from '@/api/category'
 import { formatDate, fromNow } from '@/utils/format'
 import { Calendar, Folder, View } from '@element-plus/icons-vue'
 import MarkdownIt from 'markdown-it'
 import anchor from 'markdown-it-anchor'
-import hljs from 'highlight.js'
+import { createHighlightWithWrapper } from '@/utils/highlight'
 import { setCookie, getCookie } from '@/utils/cookie'
 import { ElMessage } from 'element-plus'
 import CommentReply from '@/components/CommentReply.vue'
@@ -226,8 +229,8 @@ const currentReplyComment = ref(null)
 
 // 动态主题映射
 const themeMap = {
-  dark: 'github-dark',
-  light: 'github'
+  dark: 'atom-one-dark',
+  light: 'atom-one-light'
 }
 
 // 动态加载 highlight.js 主题
@@ -244,14 +247,7 @@ function loadHighlightTheme(theme) {
 }
 
 const md = new MarkdownIt({
-  highlight: (str, lang) => {
-    const language = lang || 'plaintext'
-    // 移除代码前后的空行
-    const trimmedStr = str.trim()
-    const highlighted = hljs.highlight(trimmedStr, { language }).value
-    
-    return `<div class="code-block-wrapper"><div class="code-block-header"><span class="code-block-language">${language}</span><button class="copy-btn" title="复制代码" onclick="copyCode(this)"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></div><pre><code class="hljs language-${language}">${highlighted}</code></pre></div>`
-  }
+  highlight: createHighlightWithWrapper()
 }).use(anchor, {
   slugify: (str) => str.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^\w\u4e00-\u9fa5-]/g, ''),
   permalink: false
@@ -317,6 +313,19 @@ async function fetchPostDetail() {
     if (post.value?.id) {
       await fetchComments(post.value.id)
       postApi.incrementViewCount(post.value.id).catch(() => {})
+
+      // 获取分类路径（用于显示层级路径）
+      if (post.value.categoryId) {
+        try {
+          const ancestorRes = await categoryApi.getAncestors(post.value.categoryId)
+          const ancestors = ancestorRes.data || []
+          if (ancestors.length > 1) {
+            post.value.categoryPath = ancestors.map(a => a.name).join(' > ')
+          }
+        } catch (e) {
+          // 忽略错误，使用 categoryName 即可
+        }
+      }
     }
   } catch (e) {
     console.error('获取文章详情失败', e)
@@ -493,6 +502,8 @@ watch(() => appStore.theme, (newTheme) => {
 </script>
 
 <style lang="scss" scoped>
+@import '@/assets/styles/_markdown.scss';
+
 .post-detail {
   max-width: 1200px;
   margin: 0 auto;
@@ -579,6 +590,15 @@ watch(() => appStore.theme, (newTheme) => {
   }
 }
 
+.category-link {
+  color: var(--el-text-color-secondary);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--el-color-primary);
+  }
+}
+
 .article-tags {
   display: flex;
   gap: 8px;
@@ -608,156 +628,15 @@ watch(() => appStore.theme, (newTheme) => {
 }
 
 .article-content {
-  line-height: 1.8;
-  color: var(--el-text-color-primary);
+  @include markdown-content;
+  @include code-theme-dark;
+}
 
-  :deep(h1), :deep(h2), :deep(h3), :deep(h4), :deep(h5), :deep(h6) {
-    margin: 24px 0 16px;
-    font-weight: 600;
-    line-height: 1.4;
-  }
-
-  :deep(h1) { font-size: 28px; }
-  :deep(h2) { font-size: 24px; }
-  :deep(h3) { font-size: 20px; }
-  :deep(h4) { font-size: 18px; }
-
-  :deep(p) {
-    margin-bottom: 16px;
-  }
-
-  :deep(pre) {
-    margin: 16px 0;
-    border-radius: 8px;
-    overflow: hidden;
-  }
-
-  :deep(.code-block-wrapper) {
-    position: relative;
-    border-radius: 8px;
-    overflow: hidden;
-    
-    pre {
-      margin: 0;
-      padding: 16px 16px;
-      background: #1e1e1e;
-      overflow-x: auto;
-      border-radius: 0;
-      line-height: 1.5;
-      
-      code {
-        color: #d4d4d4;
-        font-size: 14px;
-        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-        word-break: break-all;
-        background: transparent;
-        padding: 0;
-        display: block;
-      }
-    }
-  }
-
-  :deep(.code-block-header) {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 16px;
-    background: #2d2d2d;
-    border-bottom: 1px solid #404040;
-    border-radius: 0;
-    
-    .code-block-language {
-      font-size: 12px;
-      color: #9cdcfe;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
-    
-    .copy-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-      padding: 0;
-      border: none;
-      background: transparent;
-      color: #9cdcfe;
-      cursor: pointer;
-      border-radius: 4px;
-      transition: all 0.3s;
-      
-      &:hover {
-        background: rgba(79, 195, 247, 0.1);
-        color: #4fc3f7;
-      }
-      
-      svg {
-        width: 16px;
-        height: 16px;
-      }
-    }
-  }
-
-  :deep(code) {
-    background: var(--el-fill-color-light);
-    border-radius: 4px;
-    font-size: 14px;
-  }
-
-  :deep(blockquote) {
-    border-left: 4px solid var(--el-color-primary);
-    padding-left: 16px;
-    margin: 16px 0;
-    color: var(--el-text-color-secondary);
-  }
-
-  :deep(ul), :deep(ol) {
-    padding-left: 24px;
-    margin-bottom: 16px;
-  }
-
-  :deep(li) {
-    margin-bottom: 8px;
-  }
-
-  :deep(img) {
-    max-width: 100%;
-    border-radius: 8px;
-    margin: 16px 0;
-  }
-
-  :deep(a) {
-    color: var(--el-color-primary);
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-
-  :deep(table) {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 16px 0;
-
-    th, td {
-      border: 1px solid var(--el-border-color);
-      padding: 8px 12px;
-      text-align: left;
-    }
-
-    th {
-      background: var(--el-fill-color-light);
-      font-weight: 600;
-    }
-  }
+html.light .article-content {
+  @include code-theme-light;
 }
 
 .comment-section {
-  background: var(--el-bg-color);
   border-radius: 8px;
   padding: 24px;
 }

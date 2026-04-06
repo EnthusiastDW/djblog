@@ -9,23 +9,7 @@
 
     <div class="post-list" v-loading="loading">
       <template v-if="posts.length > 0">
-        <article
-          v-for="post in posts"
-          :key="post.id"
-          class="post-card"
-          @click="router.push(`/article/${post.slug}`)"
-        >
-          <div class="post-content">
-            <h2 class="post-title">{{ post.title }}</h2>
-            <p class="post-summary text-ellipsis-2">{{ post.summary || '暂无摘要' }}</p>
-            <div class="post-meta">
-              <span class="meta-item">
-                <el-icon><Calendar /></el-icon>
-                {{ formatDate(post.createdAt, 'YYYY-MM-DD') }}
-              </span>
-            </div>
-          </div>
-        </article>
+        <PostCard v-for="post in posts" :key="post.id" :post="post" />
       </template>
       <el-empty v-else description="该标签下暂无文章" />
     </div>
@@ -44,14 +28,12 @@
 
 <script setup>
 import { ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { tagApi } from '@/api/tag'
 import { postApi } from '@/api/post'
-import { formatDate } from '@/utils/format'
-import { Calendar } from '@element-plus/icons-vue'
+import PostCard from '@/components/post/PostCard.vue'
 
 const route = useRoute()
-const router = useRouter()
 
 const tag = ref(null)
 const posts = ref([])
@@ -111,50 +93,6 @@ watch(() => route.params.id, () => {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.post-card {
-  background: var(--el-bg-color);
-  border-radius: 8px;
-  padding: 20px;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-
-  &:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
-  }
-}
-
-.post-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-  margin-bottom: 8px;
-
-  &:hover {
-    color: var(--el-color-primary);
-  }
-}
-
-.post-summary {
-  color: var(--el-text-color-regular);
-  font-size: 14px;
-  margin-bottom: 12px;
-}
-
-.post-meta {
-  display: flex;
-  gap: 16px;
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
-}
-
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
 }
 
 .pagination-wrapper {

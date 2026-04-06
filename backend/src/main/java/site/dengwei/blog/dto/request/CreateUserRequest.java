@@ -39,5 +39,5 @@ public class CreateUserRequest {
      * 头像URL
      */
     @Size(max = 255, message = "头像URL长度不能超过255个字符")
-    private String avatar;
+    private String avatarUrl;
 }

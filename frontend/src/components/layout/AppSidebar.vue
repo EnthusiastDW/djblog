@@ -34,18 +34,18 @@
       <h3 class="section-title">分类</h3>
       <div class="category-list">
         <router-link
-          v-for="category in displayCategories"
+          v-for="category in displayTopCategories"
           :key="category.id"
-          :to="`/category/${category.id}`"
+          :to="`/categories?categoryId=${category.id}`"
           class="category-item"
         >
           <span class="category-name">{{ category.name }}</span>
-          <span class="category-count">{{ category.postCount || 0 }}</span>
+          <span class="category-count">{{ category.totalPostCount || 0 }}</span>
         </router-link>
         <router-link v-if="categoryCount > 10" to="/categories" class="more-link">
           更多...
         </router-link>
-        <el-empty v-if="categories.length === 0" description="暂无分类" :image-size="60" />
+        <el-empty v-if="categoryTree.length === 0" description="暂无分类" :image-size="60" />
       </div>
     </div>
 
@@ -96,15 +96,18 @@ import { formatDate } from '@/utils/format'
 import { Message } from '@element-plus/icons-vue'
 
 const blogUser = ref(null)
-const categories = ref([])
+const categoryTree = ref([])
 const tags = ref([])
 const recentPosts = ref([])
 const postCount = ref(0)
 const categoryCount = ref(0)
 const tagCount = ref(0)
 
-const displayCategories = computed(() => {
-  return categories.value.slice(0, 10)
+/**
+ * 只显示顶级分类
+ */
+const displayTopCategories = computed(() => {
+  return categoryTree.value.slice(0, 10)
 })
 
 const displayTags = computed(() => {
@@ -115,15 +118,24 @@ onMounted(async () => {
   try {
     const [userRes, categoryRes, tagRes, postListRes] = await Promise.all([
       userApi.getFirstUser(),
-      categoryApi.getAll(),
+      categoryApi.getTree(),
       tagApi.getAll(),
       postApi.getList({ current: 1, size: 0 })
     ])
     if (userRes.data?.records?.length > 0) {
       blogUser.value = userRes.data.records[0]
     }
-    categories.value = categoryRes.data || []
-    categoryCount.value = categoryRes.data?.length || 0
+    categoryTree.value = categoryRes.data || []
+    // 计算总分类数（含所有层级）
+    let totalCount = 0
+    function countNodes(nodes) {
+      for (const node of nodes) {
+        totalCount++
+        if (node.children) countNodes(node.children)
+      }
+    }
+    countNodes(categoryTree.value)
+    categoryCount.value = totalCount
     tags.value = (tagRes.data || []).slice(0, 10)
     tagCount.value = tagRes.data?.length || 0
     postCount.value = postListRes.data.total || 0
@@ -246,7 +258,7 @@ function getTagSize(count) {
 .category-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 2px;
 }
 
 .category-item {

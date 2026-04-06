@@ -50,6 +50,16 @@ public class PostController {
     }
 
     /**
+     * 按分类ID列表查询文章（用于包含子分类的文章查询）
+     */
+    @GetMapping("/by-categories")
+    public Response<Page<PostListDTO>> selectByCategoryIds(
+            Page<Post> page,
+            @RequestParam List<Long> categoryIds) {
+        return Response.success(postService.getPostListWithRelationsByCategoryIds(page, categoryIds));
+    }
+
+    /**
      * 分页查询所有文章（管理后台，包含草稿）
      */
     @GetMapping("/admin/list")
@@ -69,7 +79,7 @@ public class PostController {
      * 搜索文章
      */
     @GetMapping("/search")
-    public Response<Page<Post>> search(
+    public Response<Page<PostListDTO>> search(
             Page<Post> page,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String title,
@@ -110,7 +120,7 @@ public class PostController {
      * 根据年月查询文章列表
      */
     @GetMapping("/archives/{yearMonth}")
-    public Response<Page<Post>> getPostsByArchive(
+    public Response<Page<PostListDTO>> getPostsByArchive(
             @PathVariable @Pattern(regexp = "^\\d{4}-\\d{2}$", message = "年月格式不正确，应为 yyyy-MM") String yearMonth,
             Page<Post> page) {
         return Response.success(postService.getPostsByArchive(yearMonth, page));
@@ -157,11 +167,35 @@ public class PostController {
     }
 
     /**
-     * 删除文章
+     * 删除文章（软删除）
      */
     @DeleteMapping
     public Response<Boolean> delete(@RequestParam List<Long> idList) {
         return Response.success(postService.deletePosts(idList));
+    }
+
+    /**
+     * 获取已删除的文章列表
+     */
+    @GetMapping("/deleted")
+    public Response<Page<PostListDTO>> getDeletedPosts(Page<Post> page, Post post) {
+        return Response.success(postService.getDeletedPosts(page, post));
+    }
+
+    /**
+     * 恢复已删除的文章
+     */
+    @PostMapping("/restore")
+    public Response<Boolean> restore(@RequestParam List<Long> idList) {
+        return Response.success(postService.restorePosts(idList));
+    }
+
+    /**
+     * 彻底删除文章（物理删除）
+     */
+    @DeleteMapping("/permanent")
+    public Response<Boolean> permanentDelete(@RequestParam List<Long> idList) {
+        return Response.success(postService.permanentDelete(idList));
     }
 
     /**

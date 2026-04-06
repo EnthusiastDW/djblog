@@ -6,6 +6,11 @@ export const postApi = {
     return api.get('/post', { params })
   },
 
+  // 按分类ID列表查询文章（包含子分类）
+  getListByCategoryIds(params = {}) {
+    return api.get('/post/by-categories', { params })
+  },
+
   // 管理后台获取所有文章列表（包含草稿）
   getAdminList(params = {}) {
     return api.get('/post/admin/list', { params })
@@ -66,9 +71,24 @@ export const postApi = {
     return api.put('/post', data)
   },
 
-  // 删除文章
+  // 删除文章（软删除）
   delete(idList) {
     return api.delete('/post', { params: { idList: idList.join(',') } })
+  },
+
+  // 获取已删除的文章列表
+  getDeletedList(params = {}) {
+    return api.get('/post/deleted', { params })
+  },
+
+  // 恢复已删除的文章
+  restore(idList) {
+    return api.post('/post/restore', null, { params: { idList: idList.join(',') } })
+  },
+
+  // 彻底删除文章（物理删除）
+  permanentDelete(idList) {
+    return api.delete('/post/permanent', { params: { idList: idList.join(',') } })
   },
 
   // AI生成摘要

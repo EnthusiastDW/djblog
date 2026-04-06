@@ -179,3 +179,78 @@ test.describe('文章编辑页面分类回显测试', () => {
     expect(isVisible).toBeTruthy()
   })
 })
+
+test.describe('文章更改分类后数量更新测试', () => {
+  test.beforeEach(async ({ page }) => {
+    await login(page)
+  })
+
+  test('更改文章分类后分类页面数量正确更新', async ({ page }) => {
+    await page.goto('/categories')
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(1000)
+    
+    const treeNodes = page.locator('.el-tree-node')
+    const nodeCount = await treeNodes.count()
+    
+    if (nodeCount >= 2) {
+      const firstNode = treeNodes.first()
+      const firstBadge = firstNode.locator('.node-badge')
+      const firstCount = await firstBadge.textContent()
+      const firstCountNum = parseInt(firstCount) || 0
+      
+      const secondNode = treeNodes.nth(1)
+      const secondBadge = secondNode.locator('.node-badge')
+      const secondCount = await secondBadge.textContent()
+      const secondCountNum = parseInt(secondCount) || 0
+      
+      if (firstCountNum > 0) {
+        await firstNode.click()
+        await page.waitForTimeout(500)
+        
+        const postCards = page.locator('.post-card')
+        const postCount = await postCards.count()
+        
+        if (postCount > 0) {
+          const firstPost = postCards.first()
+          await firstPost.click()
+          await page.waitForLoadState('networkidle')
+          await page.waitForTimeout(500)
+          
+          const editBtn = page.locator('button:has-text("编辑")')
+          if (await editBtn.isVisible()) {
+            await editBtn.click()
+            await page.waitForLoadState('networkidle')
+            await page.waitForTimeout(1000)
+            
+            const categorySelect = page.locator('.el-select').first()
+            await categorySelect.click()
+            await page.waitForTimeout(300)
+            
+            const options = page.locator('.el-select-dropdown__item')
+            const optionCount = await options.count()
+            
+            if (optionCount >= 2) {
+              await options.nth(1).click()
+              await page.waitForTimeout(300)
+              
+              const saveBtn = page.locator('button:has-text("保存")')
+              await saveBtn.click()
+              await page.waitForTimeout(1000)
+              
+              await page.goto('/categories')
+              await page.waitForLoadState('networkidle')
+              await page.waitForTimeout(1000)
+              
+              const newFirstBadge = page.locator('.el-tree-node').first().locator('.node-badge')
+              const newFirstCount = await newFirstBadge.textContent()
+              const newFirstCountNum = parseInt(newFirstCount) || 0
+              
+              expect(newFirstCountNum).toBe(firstCountNum - 1)
+            }
+          }
+        }
+      }
+    }
+  })
+})

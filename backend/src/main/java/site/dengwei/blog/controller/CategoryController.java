@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import site.dengwei.blog.dto.CategoryTreeDTO;
 import site.dengwei.blog.dto.CategoryWithCountDTO;
 import site.dengwei.blog.dto.request.CreateCategoryRequest;
 import site.dengwei.blog.dto.request.UpdateCategoryRequest;
@@ -27,9 +28,36 @@ public class CategoryController {
     
     private final CategoryService categoryService;
 
+    /**
+     * 获取所有分类（带文章数量）- 平铺列表
+     */
     @GetMapping("/all")
     public Response<List<CategoryWithCountDTO>> getAllWithCount() {
         return Response.success(categoryService.getAllCategoriesWithCount());
+    }
+
+    /**
+     * 获取树形分类（前台用，带文章数量和汇总）
+     */
+    @GetMapping("/tree")
+    public Response<List<CategoryTreeDTO>> getTree() {
+        return Response.success(categoryService.getCategoryTree());
+    }
+
+    /**
+     * 获取树形分类（管理后台用）
+     */
+    @GetMapping("/tree/admin")
+    public Response<List<CategoryTreeDTO>> getTreeForAdmin() {
+        return Response.success(categoryService.getCategoryTreeForAdmin());
+    }
+
+    /**
+     * 获取分类祖先链路（面包屑用）
+     */
+    @GetMapping("/{id}/ancestors")
+    public Response<List<Category>> getAncestors(@PathVariable Long id) {
+        return Response.success(categoryService.getCategoryAncestors(id));
     }
 
     /**
