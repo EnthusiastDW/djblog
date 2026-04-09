@@ -63,6 +63,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole("ADMIN"); // 注册用户默认为管理员
         save(user);
         log.info("用户注册成功: {}", request.getUsername());
         return user;

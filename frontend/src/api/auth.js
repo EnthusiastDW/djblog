@@ -14,5 +14,15 @@ export const authApi = {
   // 用户登出
   logout() {
     return api.post('/auth/logout')
+  },
+
+  // 检查系统是否有用户
+  hasUser() {
+    return api.get('/auth/has-user')
+  },
+
+  // 验证初始密码
+  verifyInitialPassword(password) {
+    return api.post('/auth/verify-initial-password', { password })
   }
 }

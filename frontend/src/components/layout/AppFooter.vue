@@ -3,7 +3,7 @@
     <div class="footer-container">
       <div class="footer-content">
         <p class="copyright">
-          © {{ currentYear }} DJ Blog. All rights reserved.
+          © {{ currentYear }} <a href="https://gitee.com/autowin/djblog" target="_blank" rel="noopener noreferrer">DJ Blog</a>. All rights reserved.
         </p>
         <p class="icp" v-if="icpNumber">
           <a :href="'https://beian.miit.gov.cn/'" target="_blank" rel="noopener noreferrer">

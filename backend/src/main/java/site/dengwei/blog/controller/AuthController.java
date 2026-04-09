@@ -8,20 +8,22 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import site.dengwei.blog.config.InitialPasswordHolder;
 import site.dengwei.blog.dto.AuthResponse;
 import site.dengwei.blog.dto.LoginRequest;
 import site.dengwei.blog.dto.RegisterRequest;
 import site.dengwei.blog.entity.User;
+import site.dengwei.blog.exception.BusinessException;
 import site.dengwei.blog.service.UserService;
 import site.dengwei.blog.util.JwtUtil;
 import site.dengwei.blog.dto.Response;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
- * 认证控制器，处理用户登录、登出和注册
+ * 认证控制器
  *
  * @author dengwei
  * @since 2025/9/7 10:10
@@ -38,6 +40,9 @@ public class AuthController {
 
     /**
      * 用户登录接口
+     *
+     * @param loginRequest 登录请求
+     * @return 认证响应
      */
     @PostMapping("/login")
     public Response<AuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
@@ -67,6 +72,8 @@ public class AuthController {
 
     /**
      * 用户登出接口
+     *
+     * @return 操作结果
      */
     @PostMapping("/logout")
     public Response<String> logout() {
@@ -78,14 +85,27 @@ public class AuthController {
     }
 
     /**
-     * 用户注册接口
+     * 用户注册接口（仅允许无用户时注册）
+     *
+     * @param registerRequest 注册请求
+     * @return 认证响应
      */
     @PostMapping("/register")
     public Response<AuthResponse> register(@Valid @RequestBody RegisterRequest registerRequest) {
         log.info("收到用户注册请求: {}", registerRequest.getUsername());
 
+        // 检查是否已有用户
+        long userCount = userService.count();
+        if (userCount > 0) {
+            log.warn("注册失败：系统已有用户，不允许再次注册");
+            throw new BusinessException("系统已存在用户，无法继续注册");
+        }
+
         User newUser = userService.registerUser(registerRequest);
         String token = jwtUtil.generateToken(newUser.getUsername());
+
+        // 清除初始密码
+        InitialPasswordHolder.clear();
 
         AuthResponse authResponse = new AuthResponse();
         authResponse.setToken(token);
@@ -94,5 +114,51 @@ public class AuthController {
 
         log.info("用户注册成功: {}", registerRequest.getUsername());
         return Response.success(authResponse);
+    }
+
+    /**
+     * 检查系统是否有用户
+     *
+     * @return 系统状态信息
+     */
+    @GetMapping("/has-user")
+    public Response<Map<String, Object>> hasUser() {
+        long userCount = userService.count();
+        Map<String, Object> result = new HashMap<>();
+        result.put("hasUser", userCount > 0);
+        result.put("needsInitialSetup", userCount == 0);
+        return Response.success(result);
+    }
+
+    /**
+     * 验证初始密码（用于首次登录前的验证）
+     *
+     * @param request 包含初始密码的请求
+     * @return 验证结果
+     */
+    @PostMapping("/verify-initial-password")
+    public Response<Map<String, Object>> verifyInitialPassword(@RequestBody Map<String, String> request) {
+        String password = request.get("password");
+        
+        if (password == null || password.isEmpty()) {
+            throw new BusinessException("密码不能为空");
+        }
+
+        // 检查是否已有用户
+        long userCount = userService.count();
+        if (userCount > 0) {
+            throw new BusinessException("系统已有用户，无需初始密码验证");
+        }
+
+        // 验证初始密码
+        String initialPassword = InitialPasswordHolder.getPassword();
+        if (initialPassword == null || !initialPassword.equals(password)) {
+            throw new BusinessException("初始密码错误");
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("valid", true);
+        result.put("message", "验证成功，请完成注册");
+        return Response.success(result);
     }
 }

@@ -25,7 +25,7 @@
 | **认证** | JWT (jjwt 0.11.5) | Token 认证机制 |
 | **ORM** | MyBatis-Plus 3.5.14 | 数据持久层框架 |
 | **数据库** | MySQL 8.0.23 | 关系型数据库 |
-| **缓存** | Redis | 缓存支持 |
+| **缓存** | Caffeine | 本地缓存支持 |
 | **数据库迁移** | Flyway | 数据库版本管理 |
 | **连接池** | Druid 1.2.16 | 数据库连接池 |
 | **AI 集成** | Spring AI 1.0.0 | 阿里云千问大模型集成 |
@@ -61,11 +61,32 @@
 ## ✨ 主要功能
 
 ### 1. 用户管理
-- ✅ 单用户模式
-- ✅ 用户登录（JWT 认证）
-- ✅ 个人资料管理
-- ✅ 密码修改
-- ✅ 头像上传
+- ✅ **单用户模式**：系统仅允许存在一个管理员账户
+- ✅ **初始密码机制**：首次启动自动生成随机密码并在控制台输出
+- ✅ **用户登录**（JWT 认证）
+- ✅ **个人资料管理**
+- ✅ **密码修改**
+- ✅ **头像上传**
+
+#### 单用户模式说明
+
+**首次使用流程：**
+1. 启动后端应用，控制台会输出类似以下信息：
+   ```
+   ==========================================
+   系统检测到无用户，已生成初始密码
+   初始密码: Abc123!@#XyZ
+   请使用此密码进行首次登录和注册
+   ==========================================
+   ```
+2. 访问前端登录页面，输入控制台显示的初始密码
+3. 验证通过后，填写用户名、邮箱、密码完成注册
+4. 注册成功后，该用户自动获得管理员权限
+
+**后续使用：**
+- 登录页面直接显示普通登录表单
+- 不再开放注册功能
+- 系统始终只有一个管理员账户
 
 ### 2. 文章管理
 - ✅ 富文本编辑器（Markdown 支持）
@@ -111,10 +132,10 @@
 - ✅ **配置灵活**：支持温度参数、API Key 环境变量配置
 
 ### 7. 系统管理（管理员）
-- ✅ 用户管理（禁用/启用、重置密码、角色修改）
 - ✅ 内容审核（文章、评论）
 - ✅ 系统配置（站点信息、SEO 设置）
 - ✅ 评论设置管理
+- ✅ 背景图片设置
 
 ### 8. 其他功能
 - ✅ RSS 订阅
@@ -129,7 +150,6 @@
 
 - JDK 17+
 - MySQL 8.0+
-- Redis 7.0+
 - Node.js 18+
 - Maven 3.6+
 
@@ -141,7 +161,7 @@ git clone <repository-url>
 cd djblog
 
 # 2. 配置数据库（创建数据库并修改配置文件）
-# 在 backend/src/main/resources/application.yml 中配置 MySQL 和 Redis 连接信息
+# 在 backend/src/main/resources/application.yml 中配置 MySQL 连接信息
 
 # 3. 配置 AI API Key（可选）
 # 设置环境变量：AI_DASHSCOPE_API_KEY=your-api-key
@@ -193,7 +213,7 @@ djblog/
 │   │       ├── mapper/         # 数据访问层
 │   │       ├── entity/         # 实体类
 │   │       ├── dto/            # 数据传输对象
-│   │       ├── config/         # 配置类
+│   │       ├── config/         # 配置类（含初始密码生成器）
 │   │       ├── exception/      # 异常处理
 │   │       ├── enums/          # 枚举类
 │   │       └── util/           # 工具类
@@ -227,8 +247,12 @@ djblog/
 │   └── 开发流程与文档维护规范.md
 │
 └── deploy/                     # 部署相关脚本
-    ├── redis-compose.yml
-    └── setup-ubuntu.sh
+    ├── mysql/conf.d/           # MySQL 配置
+    ├── Dockerfile.backend      # 后端 Docker 镜像构建
+    ├── Dockerfile.frontend     # 前端 Docker 镜像构建
+    ├── docker-compose.yml      # Docker Compose 配置
+    ├── nginx.conf              # Nginx 配置
+    └── setup-ubuntu.sh         # Ubuntu 部署脚本
 ```
 
 ## 📖 API 文档
@@ -242,57 +266,80 @@ djblog/
 
 #### 认证相关
 ```
-POST /api/v1/auth/register    # 用户注册
-POST /api/v1/auth/login       # 用户登录
-POST /api/v1/auth/logout      # 用户登出
+POST /api/auth/login                    # 用户登录
+POST /api/auth/logout                   # 用户登出
+POST /api/auth/register                 # 用户注册（仅无用户时可调用）
+GET  /api/auth/has-user                 # 检查系统是否有用户
+POST /api/auth/verify-initial-password  # 验证初始密码
 ```
 
 #### 用户相关
 ```
-GET  /api/v1/users/profile    # 获取当前用户信息
-PUT  /api/v1/users/profile    # 更新用户信息
-PUT  /api/v1/users/password   # 修改密码
+GET  /api/user/{id}/public    # 获取公开用户资料
+GET  /api/user                # 分页查询用户列表（管理员）
+PUT  /api/user                # 更新用户信息（管理员）
 ```
 
 #### 文章相关
 ```
-GET    /api/v1/posts          # 文章列表
-GET    /api/v1/posts/{id}     # 文章详情
-POST   /api/v1/posts          # 创建文章
-PUT    /api/v1/posts/{id}     # 更新文章
-DELETE /api/v1/posts/{id}     # 删除文章
-GET    /api/v1/posts/archive  # 文章归档
+GET    /api/post                       # 文章列表
+GET    /api/post/{id}                  # 文章详情
+GET    /api/post/slug/{slug}           # 根据 Slug 查询文章
+GET    /api/post/{id}/detail           # 文章详情（含分类标签）
+GET    /api/post/archives              # 文章归档
+GET    /api/post/archives/{yearMonth}  # 按年月查询文章
+GET    /api/post/search                # 搜索文章
+POST   /api/post                       # 创建文章
+POST   /api/post/draft                 # 保存草稿
+POST   /api/post/publish               # 发布文章
+PUT    /api/post                       # 更新文章
+DELETE /api/post                       # 删除文章（软删除）
+GET    /api/post/deleted               # 已删除文章列表
+POST   /api/post/restore               # 恢复已删除文章
+DELETE /api/post/permanent             # 彻底删除文章
+POST   /api/post/{id}/view             # 增加浏览量
 ```
 
 #### 分类相关
 ```
-GET    /api/v1/categories            # 分类列表
-GET    /api/v1/categories/{id}/posts # 分类下文章
-POST   /api/v1/categories            # 创建分类
-PUT    /api/v1/categories/{id}       # 更新分类
-DELETE /api/v1/categories/{id}       # 删除分类
+GET    /api/category                  # 分类列表
+GET    /api/category/all              # 所有分类（带文章数量）
+GET    /api/category/tree             # 树形分类（前台）
+GET    /api/category/tree/admin       # 树形分类（后台）
+GET    /api/category/{id}             # 分类详情
+GET    /api/category/{id}/ancestors   # 分类祖先链路
+GET    /api/category/{id}/posts       # 分类下文章
+POST   /api/category                  # 创建分类
+PUT    /api/category                  # 更新分类
+DELETE /api/category/{id}             # 删除分类
 ```
 
 #### 标签相关
 ```
-GET    /api/v1/tags            # 标签列表
-GET    /api/v1/tags/{id}/posts # 标签下文章
-POST   /api/v1/tags            # 创建标签
-PUT    /api/v1/tags/{id}       # 更新标签
-DELETE /api/v1/tags/{id}       # 删除标签
+GET    /api/tag                  # 标签列表
+GET    /api/tag/all              # 所有标签（带文章数量）
+GET    /api/tag/{id}             # 标签详情
+GET    /api/tag/{id}/posts       # 标签下文章
+POST   /api/tag                  # 创建标签
+PUT    /api/tag                  # 更新标签
+DELETE /api/tag/{id}             # 删除标签
 ```
 
 #### 评论相关
 ```
-GET    /api/v1/posts/{id}/comments  # 文章评论列表
-POST   /api/v1/posts/{id}/comments  # 发表评论
-DELETE /api/v1/comments/{id}        # 删除评论
+GET    /api/comment/post/{postId}        # 文章评论列表
+POST   /api/comment                      # 发表评论
+PUT    /api/comment/{id}                 # 更新评论
+DELETE /api/comment/{id}                 # 删除评论
+GET    /api/comment/admin/list           # 评论列表（管理后台）
+PUT    /api/comment/admin/audit/{id}     # 审核评论
+PUT    /api/comment/admin/mark-spam/{id} # 标记垃圾评论
 ```
 
-#### AI 相关
+#### 系统设置
 ```
-POST /api/v1/ai/slug     # AI 生成 Slug
-GET  /api/v1/ai/status   # 获取 AI 服务状态
+GET  /api/setting    # 获取系统设置
+PUT  /api/setting    # 更新系统设置
 ```
 
 ## 🧪 测试
@@ -361,8 +408,7 @@ npm run build
 
 修改 `backend/src/main/resources/application-prod.yml` 配置生产环境参数：
 - 数据库连接
-- Redis 连接
-- AI API Key
+- AI API Key（可选）
 - 日志级别
 - 端口配置
 
