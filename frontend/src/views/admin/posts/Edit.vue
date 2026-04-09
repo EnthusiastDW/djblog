@@ -187,11 +187,14 @@ async function fetchCategories() {
 }
 
 async function fetchTags() {
+  tagLoading.value = true
   try {
-    const res = await tagApi.getList({ size: 100 })
-    tags.value = res.data.records || []
+    const res = await tagApi.getAll()
+    tags.value = res.data || []
   } catch (e) {
     console.error('获取标签失败', e)
+  } finally {
+    tagLoading.value = false
   }
 }
 
