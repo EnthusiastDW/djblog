@@ -40,9 +40,9 @@
             :loading="categoryLoading"
             style="width: 100%;"
           />
-          <el-button type="primary" link class="manage-category-btn" @click="router.push('/admin/categories')">
-            <el-icon><Setting /></el-icon>
-            管理分类
+          <el-button type="primary" link class="add-category-btn" @click="handleAddCategory">
+            <el-icon><Plus /></el-icon>
+            新增分类
           </el-button>
         </div>
       </el-form-item>
@@ -101,6 +101,12 @@
       </el-form-item>
     </el-form>
 
+    <!-- 新增分类对话框 -->
+    <CategoryCreateDialog
+      v-model="categoryDialogVisible"
+      :category-tree="categoryTree"
+      @success="handleCategoryCreated"
+    />
 
   </div>
 </template>
@@ -112,10 +118,11 @@ import { useAppStore } from '@/stores/app'
 import { postApi } from '@/api/post'
 import { categoryApi } from '@/api/category'
 import { tagApi } from '@/api/tag'
-import { ArrowLeft, MagicStick, Setting } from '@element-plus/icons-vue'
+import { ArrowLeft, MagicStick, Setting, Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import MarkdownIt from 'markdown-it'
 import { createHighlightWithWrapper } from '@/utils/highlight'
+import CategoryCreateDialog from '@/components/CategoryCreateDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -131,6 +138,7 @@ const tags = ref([])
 const categoryLoading = ref(false)
 const tagLoading = ref(false)
 const summaryLoading = ref(false)
+const categoryDialogVisible = ref(false)
 
 const isEdit = computed(() => !!route.params.id)
 
@@ -332,6 +340,15 @@ async function handlePublish() {
   }
 }
 
+function handleAddCategory() {
+  categoryDialogVisible.value = true
+}
+
+function handleCategoryCreated() {
+  // 重新加载分类树
+  fetchCategories()
+}
+
 onMounted(() => {
   fetchCategories()
   fetchTags()
@@ -379,7 +396,7 @@ watch(() => appStore.theme, (newTheme) => {
       flex: 1;
     }
 
-    .manage-category-btn {
+    .add-category-btn {
       flex-shrink: 0;
       white-space: nowrap;
     }
@@ -429,5 +446,19 @@ watch(() => appStore.theme, (newTheme) => {
   html.light .editor-preview {
     @include code-theme-light;
   }
+}
+</style>
+
+<style lang="scss">
+// 非 scoped 样式，用于 v-html 渲染的 Markdown 预览内容
+@import '@/assets/styles/_markdown.scss';
+
+.editor-preview {
+  @include markdown-content;
+  @include code-theme-dark;
+}
+
+html.light .editor-preview {
+  @include code-theme-light;
 }
 </style>

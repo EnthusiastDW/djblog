@@ -310,6 +310,11 @@ async function fetchPostDetail() {
       post.value = res.data
     }
     
+    // 设置页面标题为文章标题
+    if (post.value?.title) {
+      document.title = `${post.value.title} - DJ Blog`
+    }
+    
     if (post.value?.id) {
       await fetchComments(post.value.id)
       postApi.incrementViewCount(post.value.id).catch(() => {})
@@ -764,5 +769,19 @@ html.light .article-content {
   color: var(--el-text-color-regular);
   line-height: 1.6;
   font-size: 14px;
+}
+</style>
+
+<style lang="scss">
+// 非 scoped 样式，用于 v-html 渲染的 Markdown 内容
+@import '@/assets/styles/_markdown.scss';
+
+.article-content {
+  @include markdown-content;
+  @include code-theme-dark;
+}
+
+html.light .article-content {
+  @include code-theme-light;
 }
 </style>
