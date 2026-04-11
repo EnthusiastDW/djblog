@@ -38,16 +38,27 @@ api.interceptors.response.use(
     if (error.response) {
       switch (error.response.status) {
         case 401:
-          const path = error.config?.url || ''
-          // 文章详情等公开页面不强制跳转登录
-          if (!path.includes('/post/') && !path.includes('/comment') && !path.includes('/category') && !path.includes('/tag') && !path.includes('/archive') && !path.includes('/user')) {
-            ElMessage.error('登录已过期，请重新登录')
-            localStorage.removeItem('token')
-            localStorage.removeItem('user')
-            router.push('/login')
+          // 清除本地存储的 token 和用户信息
+          localStorage.removeItem('token')
+          localStorage.removeItem('user')
+          
+          // 判断当前是否在公开页面（文章详情、首页等）
+          const currentPath = window.location.pathname
+          const isPublicPage = currentPath.startsWith('/post/') || 
+                              currentPath === '/' || 
+                              currentPath.startsWith('/categories') ||
+                              currentPath.startsWith('/tags') ||
+                              currentPath.startsWith('/archive') ||
+                              currentPath.startsWith('/search') ||
+                              currentPath.startsWith('/user/')
+          
+          if (isPublicPage) {
+            // 公开页面只显示提示，不强制跳转
+            ElMessage.warning(error.response.data?.message || '请先登录')
           } else {
-            // 公开页面只显示错误提示，不跳转
-            ElMessage.error(error.response.data?.message || '请先登录')
+            // 管理页面或其他需要认证的页面，强制跳转到登录页
+            ElMessage.error('登录已过期，请重新登录')
+            router.push({ path: '/login', query: { redirect: currentPath } })
           }
           break
         case 403:
