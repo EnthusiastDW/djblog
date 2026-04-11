@@ -42,7 +42,7 @@ spring:
     default-schema: blog
     user: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:root123}
-  
+
 # MyBatis Plus 配置（开发环境开启 SQL 日志）
 mybatis-plus:
   configuration:
@@ -57,10 +57,14 @@ springdoc:
 logging:
   level:
     root: INFO
-#    site.dengwei.blog: DEBUG
-#    com.baomidou.mybatisplus: DEBUG
-#    org.springframework: WARN
-#    org.hibernate.validator: DEBUG
+    #    site.dengwei.blog: DEBUG
+    #    com.baomidou.mybatisplus: DEBUG
+    #    org.springframework: WARN
+    #    org.hibernate.validator: DEBUG
+    java.net: DEBUG
+    sun.net:  DEBUG
+    org.springframework.web.client: DEBUG
+
   file:
     path: ./logs
 

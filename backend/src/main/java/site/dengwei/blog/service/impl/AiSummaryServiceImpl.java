@@ -29,6 +29,7 @@ public class AiSummaryServiceImpl implements AiSummaryService {
             3. 语言简洁流畅
             4. 不要使用"本文"、"文章"等开头
             5. 直接输出摘要内容，不要添加任何其他说明
+            6. 不要输出思考过程，只输出最终摘要结果
             
             标题：{title}
             
@@ -50,8 +51,8 @@ public class AiSummaryServiceImpl implements AiSummaryService {
 
         try {
             // 截取内容前2000字符以避免token过多
-            String truncatedContent = content.length() > 2000 
-                    ? content.substring(0, 2000) + "..." 
+            String truncatedContent = content.length() > 2000
+                    ? content.substring(0, 2000) + "..."
                     : content;
 
             String prompt = SUMMARY_PROMPT
@@ -64,7 +65,7 @@ public class AiSummaryServiceImpl implements AiSummaryService {
                     .user(prompt)
                     .call()
                     .content();
-
+            log.info("大模型输出：{}", response);
             String summary = cleanSummary(response, maxLength);
             log.info("AI generated summary: {}", summary);
             return summary;
@@ -83,10 +84,18 @@ public class AiSummaryServiceImpl implements AiSummaryService {
             return "";
         }
 
-        String summary = response.trim()
-                .replaceAll("```.*?```", "") // 移除代码块
-                .replaceAll("摘要[：:]", "") // 移除"摘要："前缀
-                .trim();
+        String summary = response.trim();
+
+        // 移除 DeepSeek 的思考过程 <think>...</think>
+        summary = summary.replaceAll("<think>.*?</think>", "").trim();
+
+        // 移除代码块
+        summary = summary.replaceAll("```.*?```", "");
+
+        // 移除"摘要："前缀
+        summary = summary.replaceAll("摘要[：:]", "");
+
+        summary = summary.trim();
 
         // 限制长度
         if (summary.length() > maxLength) {
@@ -109,7 +118,7 @@ public class AiSummaryServiceImpl implements AiSummaryService {
                 .replaceAll("#+\\s*", "")
                 .replaceAll("\\*+", "")
                 .replaceAll("`+", "")
-                .replaceAll("\\[([^\\]]+)\\]\\([^)]+\\)", "$1")
+                .replaceAll("\\[([^]]+)]\\([^)]+\\)", "$1")
                 .replaceAll("\\n+", " ")
                 .trim();
 

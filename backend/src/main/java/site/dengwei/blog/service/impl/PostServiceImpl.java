@@ -27,7 +27,6 @@ import site.dengwei.blog.service.AiSummaryService;
 import site.dengwei.blog.service.PostService;
 import site.dengwei.blog.service.PostTagService;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -455,7 +454,8 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         }
         post.setTitle(request.getTitle());
         post.setContent(request.getContent());
-        post.setSlug(processSlug(request.getTitle(), request.getSlug(), request.getId()));
+        // 只有在首次发布时才生成 slug
+        post.setSlug(processSlug(post, request.getTitle(), status));
         post.setSummary(request.getSummary());
         post.setCoverImage(request.getCoverImage());
         post.setCategoryId(request.getCategoryId());
@@ -467,7 +467,8 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         Post post = new Post();
         post.setTitle(request.getTitle());
         post.setContent(request.getContent());
-        post.setSlug(processSlug(request.getTitle(), request.getSlug(), null));
+        // 创建文章时不生成 slug，等发布时再生成
+        post.setSlug(null);
         post.setCoverImage(request.getCoverImage());
         post.setCategoryId(request.getCategoryId());
         return post;
@@ -476,21 +477,34 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     private void updatePostFromRequest(Post post, UpdatePostRequest request) {
         post.setTitle(request.getTitle());
         post.setContent(request.getContent());
-        post.setSlug(processSlug(request.getTitle(), request.getSlug(), post.getId()));
+        // 更新文章时不重新生成 slug，保持原有 slug
         post.setCoverImage(request.getCoverImage());
         post.setCategoryId(request.getCategoryId());
         post.setSummary(request.getSummary());
     }
 
     /**
-     * 使用 AI 自动生成 slug（带重复检测）
+     * 处理 slug 生成逻辑
+     * - 只有首次发布时才生成 slug
+     * - 如果文章已有 slug，则保持不变
+     * - 创建和草稿状态都不生成 slug
      */
-    private String processSlug(String title, String slug, Long currentId) {
-        // 忽略前端传入的 slug，始终使用 AI 生成
-        String baseSlug = aiSlugService.generateSlug(title);
+    private String processSlug(Post existingPost, String title, PostStatus status) {
+        // 如果是更新操作且文章已有 slug，直接返回原有 slug
+        if (existingPost != null && StringUtils.hasText(existingPost.getSlug())) {
+            log.debug("文章已有 slug，保持不变：{}", existingPost.getSlug());
+            return existingPost.getSlug();
+        }
         
-        // 检查 slug 是否重复
-        return ensureUniqueSlug(baseSlug, currentId);
+        // 如果是草稿状态或创建新文章，不生成 slug
+        if (status == PostStatus.DRAFT || existingPost == null) {
+            log.debug("草稿或新建状态，暂不生成 slug");
+            return null;
+        }
+        
+        // 首次发布时生成 slug
+        String baseSlug = aiSlugService.generateSlug(title);
+        return ensureUniqueSlug(baseSlug, existingPost.getId());
     }
     
     /**
@@ -512,10 +526,9 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         }
         
         // slug 重复，添加计数器后缀
-        String originalSlug = baseSlug;
         int counter = 1;
         while (true) {
-            String newSlug = originalSlug + "-" + counter;
+            String newSlug = baseSlug + "-" + counter;
             Post checkPost = getOne(new LambdaQueryWrapper<Post>()
                     .eq(Post::getSlug, newSlug)
                     .ne(currentId != null, Post::getId, currentId));
