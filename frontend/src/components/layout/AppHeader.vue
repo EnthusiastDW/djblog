@@ -2,6 +2,16 @@
   <header class="app-header">
     <div class="header-container">
       <div class="header-left">
+        <!-- 移动端博主头像 -->
+        <el-avatar 
+          v-if="blogUser && isMobile" 
+          :size="32" 
+          :src="blogUser.avatarUrl"
+          class="mobile-blogger-avatar"
+          @click="handleToggleLeftSidebar"
+        >
+          {{ blogUser.username?.charAt(0) || '博' }}
+        </el-avatar>
         <router-link to="/" class="logo">
           <span class="logo-text">{{ logoText }}</span>
         </router-link>
@@ -61,6 +71,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useMediaQuery } from '@vueuse/core'
 import { useUserStore } from '@/stores/user'
 import { useAppStore } from '@/stores/app'
 import { userApi } from '@/api/user'
@@ -70,9 +81,14 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const appStore = useAppStore()
+const isMobile = useMediaQuery('(max-width: 992px)')
 
 function handleToggleSidebar() {
   appStore.toggleSidebar()
+}
+
+function handleToggleLeftSidebar() {
+  appStore.toggleLeftSidebar()
 }
 
 const blogUser = ref(null)
@@ -130,6 +146,15 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 40px;
+}
+
+.mobile-blogger-avatar {
+  cursor: pointer;
+  transition: transform 0.3s;
+  
+  &:hover {
+    transform: scale(1.1);
+  }
 }
 
 .logo {

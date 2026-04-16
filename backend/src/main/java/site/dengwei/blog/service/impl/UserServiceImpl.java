@@ -96,6 +96,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (request.getBio() != null) {
             user.setBio(request.getBio());
         }
+        if (request.getWechatQrCode() != null) {
+            user.setWechatQrCode(request.getWechatQrCode());
+        }
         if (request.getRole() != null) {
             user.setRole(request.getRole());
         }
@@ -125,6 +128,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         publicUser.setAvatarUrl(user.getAvatarUrl());
         publicUser.setBio(user.getBio());
         publicUser.setContactInfo(user.getContactInfo());
+        publicUser.setWechatQrCode(user.getWechatQrCode());
         return publicUser;
     }
 }

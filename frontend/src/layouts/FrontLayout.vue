@@ -6,6 +6,10 @@
       <app-header />
     </header>
     <div class="front-main-container">
+      <!-- 左侧边栏 -->
+      <aside class="left-sidebar" :class="{ 'left-sidebar-hidden': isMobile && !appStore.leftSidebarVisible }">
+        <app-left-sidebar />
+      </aside>
       <main class="front-main">
         <router-view v-slot="{ Component }">
           <transition name="fade-slide" mode="out-in">
@@ -13,10 +17,14 @@
           </transition>
         </router-view>
       </main>
+      <!-- 右侧边栏 -->
       <aside class="front-aside" :class="{ 'sidebar-hidden': isMobile && appStore.sidebarCollapsed }">
         <app-sidebar />
       </aside>
     </div>
+    <!-- 左侧边栏遮罩 -->
+    <div class="left-sidebar-overlay" :class="{ 'overlay-visible': isMobile && appStore.leftSidebarVisible }" @click="handleToggleLeftSidebar"></div>
+    <!-- 右侧边栏遮罩 -->
     <div class="sidebar-overlay" :class="{ 'overlay-visible': isMobile && !appStore.sidebarCollapsed }" @click="handleToggleSidebar"></div>
     <footer class="front-footer">
       <app-footer />
@@ -28,6 +36,7 @@
 import { computed, onMounted, watch } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 import AppHeader from '@/components/layout/AppHeader.vue'
+import AppLeftSidebar from '@/components/layout/AppLeftSidebar.vue'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import { useAppStore } from '@/stores/app'
@@ -37,6 +46,10 @@ const isMobile = useMediaQuery('(max-width: 992px)')
 
 function handleToggleSidebar() {
   appStore.toggleSidebar()
+}
+
+function handleToggleLeftSidebar() {
+  appStore.toggleLeftSidebar()
 }
 
 watch(isMobile, (newIsMobile) => {
@@ -123,6 +136,19 @@ onMounted(() => {
   display: flex;
 }
 
+.left-sidebar {
+  background: rgba(255, 255, 255, 0.8);
+  padding: 16px;
+  border-right: 1px solid var(--el-border-color-lighter);
+  backdrop-filter: blur(10px);
+  width: 280px;
+  transition: transform 0.3s ease;
+}
+
+.left-sidebar-hidden {
+  display: none;
+}
+
 .front-main {
   padding: 24px;
   background: rgba(255, 255, 255, 0.8);
@@ -144,6 +170,19 @@ onMounted(() => {
 }
 
 .sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 99;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.left-sidebar-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -187,6 +226,10 @@ onMounted(() => {
   background: rgba(20, 20, 20, 0.8) !important;
 }
 
+.dark .left-sidebar {
+  background: rgba(20, 20, 20, 0.8) !important;
+}
+
 .dark .front-footer {
   background: rgba(20, 20, 20, 0.8) !important;
 }
@@ -196,6 +239,27 @@ onMounted(() => {
 }
 
 @media (max-width: 992px) {
+  .left-sidebar {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    bottom: 0;
+    z-index: 100;
+    transform: translateX(-100%);
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .left-sidebar:not(.left-sidebar-hidden) {
+    transform: translateX(0);
+  }
+
+  .left-sidebar-hidden {
+    display: block;
+    transform: translateX(-100%);
+  }
+
   .front-aside {
     position: fixed;
     top: 60px;

@@ -30,6 +30,15 @@
         <el-form-item label="个人简介">
           <el-input v-model="form.bio" type="textarea" :rows="3" />
         </el-form-item>
+        <el-form-item label="微信二维码">
+          <div class="qrcode-upload">
+            <el-input v-model="form.wechatQrCode" placeholder="输入微信二维码图片URL" />
+            <el-button @click="handleUploadQrCode" style="margin-left: 10px;">上传</el-button>
+          </div>
+          <div v-if="form.wechatQrCode" class="qrcode-preview">
+            <el-image :src="form.wechatQrCode" fit="contain" class="preview-image" />
+          </div>
+        </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleUpdate" :loading="loading">
             保存修改
@@ -54,7 +63,8 @@ const form = reactive({
   email: '',
   avatarUrl: '',
   contactInfo: '',
-  bio: ''
+  bio: '',
+  wechatQrCode: ''
 })
 
 onMounted(() => {
@@ -64,6 +74,7 @@ onMounted(() => {
     form.avatarUrl = userStore.user.avatarUrl || ''
     form.contactInfo = userStore.user.contactInfo || ''
     form.bio = userStore.user.bio || ''
+    form.wechatQrCode = userStore.user.wechatQrCode || ''
   }
 })
 
@@ -75,20 +86,41 @@ async function handleUpdate() {
       email: form.email,
       avatarUrl: form.avatarUrl,
       contactInfo: form.contactInfo,
-      bio: form.bio
+      bio: form.bio,
+      wechatQrCode: form.wechatQrCode
     })
     userStore.updateUserInfo({
       email: form.email,
       avatarUrl: form.avatarUrl,
       contactInfo: form.contactInfo,
-      bio: form.bio
+      bio: form.bio,
+      wechatQrCode: form.wechatQrCode
     })
     ElMessage.success('保存成功')
+    // 刷新页面数据
+    window.location.reload()
   } catch (e) {
     console.error('保存失败', e)
   } finally {
     loading.value = false
   }
+}
+
+function handleUploadQrCode() {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/*'
+  input.onchange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (res) => {
+        form.wechatQrCode = res.target.result
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+  input.click()
 }
 </script>
 
@@ -126,5 +158,24 @@ async function handleUpdate() {
 
 .profile-card {
   background: var(--el-bg-color);
+}
+
+.qrcode-upload {
+  display: flex;
+  align-items: center;
+}
+
+.qrcode-preview {
+  margin-top: 12px;
+  width: 200px;
+  height: 200px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--el-border-color-lighter);
+}
+
+.preview-image {
+  width: 100%;
+  height: 100%;
 }
 </style>

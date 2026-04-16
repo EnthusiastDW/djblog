@@ -7,6 +7,7 @@ export const useAppStore = defineStore('app', () => {
   const preferredDark = usePreferredDark()
   const theme = ref(localStorage.getItem('theme') || (preferredDark.value ? 'dark' : 'light'))
   const sidebarCollapsed = ref(false)
+  const leftSidebarVisible = ref(false)
   const bgImage = ref(localStorage.getItem('bgImage') || '')
   const bgOpacity = ref(parseFloat(localStorage.getItem('bgOpacity')) || 0.3)
   const todayVisitors = ref(0)
@@ -31,6 +32,10 @@ export const useAppStore = defineStore('app', () => {
 
   function toggleSidebar() {
     sidebarCollapsed.value = !sidebarCollapsed.value
+  }
+
+  function toggleLeftSidebar() {
+    leftSidebarVisible.value = !leftSidebarVisible.value
   }
 
   function setBackground(image, opacity) {
@@ -71,12 +76,14 @@ export const useAppStore = defineStore('app', () => {
   return {
     theme,
     sidebarCollapsed,
+    leftSidebarVisible,
     bgImage,
     bgOpacity,
     todayVisitors,
     totalVisitors,
     toggleTheme,
     toggleSidebar,
+    toggleLeftSidebar,
     setBackground,
     fetchSettings,
     fetchVisitStats

@@ -58,6 +58,15 @@
         <el-form-item label="联系方式">
           <el-input v-model="form.contactInfo" placeholder="输入联系方式" />
         </el-form-item>
+        <el-form-item label="微信二维码">
+          <div class="qrcode-upload">
+            <el-input v-model="form.wechatQrCode" placeholder="输入微信二维码图片URL" />
+            <el-button @click="handleUploadQrCode" style="margin-left: 10px;">上传</el-button>
+          </div>
+          <div v-if="form.wechatQrCode" class="qrcode-preview">
+            <el-image :src="form.wechatQrCode" fit="contain" class="preview-image" />
+          </div>
+        </el-form-item>
         <el-form-item label="角色">
           <el-select v-model="form.role" style="width: 100%;">
             <el-option label="普通用户" value="USER" />
@@ -95,6 +104,7 @@ const form = reactive({
   email: '',
   avatarUrl: '',
   contactInfo: '',
+  wechatQrCode: '',
   role: 'USER'
 })
 
@@ -125,6 +135,7 @@ function handleEdit(row) {
   form.email = row.email || ''
   form.avatarUrl = row.avatarUrl || ''
   form.contactInfo = row.contactInfo || ''
+  form.wechatQrCode = row.wechatQrCode || ''
   form.role = row.role || 'USER'
   dialogVisible.value = true
 }
@@ -138,6 +149,7 @@ async function handleSubmit() {
       email: form.email,
       avatarUrl: form.avatarUrl,
       contactInfo: form.contactInfo,
+      wechatQrCode: form.wechatQrCode,
       role: form.role
     })
     ElMessage.success('更新成功')
@@ -148,6 +160,23 @@ async function handleSubmit() {
   } finally {
     submitting.value = false
   }
+}
+
+function handleUploadQrCode() {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/*'
+  input.onchange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (res) => {
+        form.wechatQrCode = res.target.result
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+  input.click()
 }
 
 async function handleDelete(row) {
@@ -185,5 +214,24 @@ onMounted(() => {
     justify-content: flex-end;
     margin-top: 20px;
   }
+}
+
+.qrcode-upload {
+  display: flex;
+  align-items: center;
+}
+
+.qrcode-preview {
+  margin-top: 12px;
+  width: 200px;
+  height: 200px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--el-border-color-lighter);
+}
+
+.preview-image {
+  width: 100%;
+  height: 100%;
 }
 </style>

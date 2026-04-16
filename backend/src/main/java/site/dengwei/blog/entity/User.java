@@ -64,6 +64,11 @@ public class User extends Model<User> implements Serializable, UserDetails {
     private String bio;
 
     /**
+     * 微信二维码图片URL
+     */
+    private String wechatQrCode;
+
+    /**
      * 角色
      */
     private String role;

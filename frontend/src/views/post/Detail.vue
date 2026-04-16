@@ -188,6 +188,7 @@
         </div>
       </section>
     </template>
+    <BackToTop />
   </div>
 </template>
 
@@ -208,6 +209,7 @@ import { setCookie, getCookie } from '@/utils/cookie'
 import { ElMessage } from 'element-plus'
 import CommentReply from '@/components/CommentReply.vue'
 import TocSidebar from '@/components/TocSidebar.vue'
+import BackToTop from '@/components/BackToTop.vue'
 
 const route = useRoute()
 const router = useRouter()

@@ -45,6 +45,12 @@ public class UpdateUserRequest {
     private String bio;
 
     /**
+     * 微信二维码图片URL
+     */
+    @Size(max = 500, message = "微信二维码URL长度不能超过500个字符")
+    private String wechatQrCode;
+
+    /**
      * 角色
      */
     @Size(max = 20, message = "角色长度不能超过20个字符")

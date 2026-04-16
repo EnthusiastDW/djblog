@@ -99,6 +99,7 @@ const activeId = ref(null)
 const showToc = ref(true) // 桌面端默认展开
 const isMobile = ref(false)
 const isScrolled = ref(false)
+const isNavigating = ref(false) // 标记是否正在导航到目录项
 
 // 解析 HTML 内容中的标题
 function parseTitles() {
@@ -128,41 +129,61 @@ function handleClick(event, id) {
     showToc.value = false
   }
   
+  // 标记正在导航
+  isNavigating.value = true
+  activeId.value = id
+  
   // 等待 DOM 更新后滚动到目标位置
   nextTick(() => {
     const element = document.getElementById(id)
     if (element) {
       const offset = 80 // 考虑固定 header 的高度
       const top = element.getBoundingClientRect().top + window.scrollY - offset
-      window.scrollTo({ top, behavior: 'smooth' })
-      activeId.value = id
       
       // 更新 URL hash 但不触发滚动
       history.pushState(null, '', `#${id}`)
+      
+      window.scrollTo({ top, behavior: 'smooth' })
+      
+      // 平滑滚动结束后恢复
+      setTimeout(() => {
+        isNavigating.value = false
+        // 确保最终 activeId 正确
+        const currentElement = document.getElementById(id)
+        if (currentElement) {
+          handleScroll()
+        }
+      }, 1000) // smooth scroll 通常需要约 1 秒
     }
   })
 }
 
 // 监听滚动，高亮当前标题
 function handleScroll() {
+  // 如果正在导航到目录项，不更新 activeId
+  if (isNavigating.value) return
+  
   if (titles.value.length === 0) return
   
   const scrollPosition = window.scrollY + 100
+  let lastMatchedId = null
   
-  // 找到第一个在滚动位置之前的标题
+  // 找到所有在滚动位置之前的标题，记录最后一个
   for (let i = 0; i < titles.value.length; i++) {
     const element = document.getElementById(titles.value[i].id)
     if (element) {
       const elementTop = element.offsetTop
       if (scrollPosition >= elementTop) {
-        activeId.value = titles.value[i].id
-        return
+        lastMatchedId = titles.value[i].id
       }
     }
   }
   
-  // 如果滚动位置在第一个标题之前，选中第一个
-  if (titles.value.length > 0) {
+  // 使用最后一个匹配的标题（当前视口内最靠下的标题）
+  if (lastMatchedId) {
+    activeId.value = lastMatchedId
+  } else if (titles.value.length > 0) {
+    // 如果滚动位置在所有标题之前，选中第一个
     activeId.value = titles.value[0].id
   }
   
@@ -250,16 +271,43 @@ function toggleToc() {
   position: sticky;
   top: 84px;
   max-height: calc(100vh - 100px);
+  display: flex;
+  flex-direction: column;
   
   // 桌面端显示内容
   .toc-sidebar-inner {
-    display: block;
+    display: flex;
+    flex-direction: column;
     background: var(--el-bg-color);
     border-radius: 8px;
     padding: 16px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    overflow-y: auto;
+    overflow: hidden;
     transition: all 0.3s;
+    
+    .toc-nav {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+      
+      // 自定义滚动条样式
+      &::-webkit-scrollbar {
+        width: 6px;
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background: var(--el-border-color);
+        border-radius: 3px;
+        
+        &:hover {
+          background: var(--el-border-color-darker);
+        }
+      }
+      
+      &::-webkit-scrollbar-track {
+        background: transparent;
+      }
+    }
   }
 }
 
@@ -292,6 +340,26 @@ function toggleToc() {
     display: block;
     background: var(--el-bg-color);
     padding: 16px;
+    overflow-y: auto;
+    max-height: 100vh;
+    
+    // 自定义滚动条样式
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: var(--el-border-color);
+      border-radius: 3px;
+      
+      &:hover {
+        background: var(--el-border-color-darker);
+      }
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
   }
 }
 
