@@ -23,10 +23,8 @@ public class VisitStatisticsInterceptor implements HandlerInterceptor {
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, 
                                 Object handler, Exception ex) throws Exception {
-        if (ex == null && response.getStatus() == 200) {
-            String ip = RequestContextUtil.getClientIp(request);
-            String userAgent = request.getHeader("User-Agent");
-            visitStatisticsService.recordVisit(ip, userAgent);
-        }
+        String ip = RequestContextUtil.getClientIp(request);
+        String userAgent = request.getHeader("User-Agent");
+        visitStatisticsService.recordVisit(ip, userAgent);
     }
 }
