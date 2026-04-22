@@ -5,7 +5,8 @@ import api from '@/api/index'
 
 export const useAppStore = defineStore('app', () => {
   const preferredDark = usePreferredDark()
-  const theme = ref(localStorage.getItem('theme') || (preferredDark.value ? 'dark' : 'light'))
+  // 默认主题改为深色，如果没有 localStorage 设置
+  const theme = ref(localStorage.getItem('theme') || 'dark')
   const sidebarCollapsed = ref(false)
   const leftSidebarVisible = ref(false)
   const bgImage = ref(localStorage.getItem('bgImage') || '')

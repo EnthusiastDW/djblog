@@ -8,19 +8,22 @@
       </div>
       <h3 class="profile-name">{{ blogUser?.nickname || blogUser?.username || '博主' }}</h3>
       <p class="profile-bio">{{ blogUser?.bio || '这个人很懒，什么都没留下' }}</p>
-      <div class="profile-contact-row" v-if="blogUser?.email || blogUser?.contactInfo">
+      <div class="profile-contact-row" v-if="blogUser?.email || blogUser?.contactInfo || blogUser?.wechatQrCode">
         <a v-if="blogUser?.email" :href="'mailto:' + blogUser.email" class="contact-icon" title="发送邮件">
           <el-icon><Message /></el-icon>
         </a>
+        <div v-if="blogUser?.wechatQrCode" class="wechat-icon-wrapper">
+          <div class="contact-icon wechat-icon" title="微信">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+              <path d="M8.5,2C4.9,2,2,4.5,2,7.5c0,1.8,1,3.4,2.6,4.4C4.5,12.6,4.4,13,4.3,13.4c-0.1,0.4-0.4,1.4-0.4,1.4s1.3-0.7,1.9-1 c0.1,0,0.2,0,0.3,0.1c0.8,0.2,1.6,0.4,2.5,0.4c0.3,0,0.6,0,0.9-0.1c-0.1-0.3-0.1-0.6-0.1-0.9c0-3,2.7-5.5,6-5.5c0.3,0,0.6,0,0.9,0.1 C16.2,4.5,12.7,2,8.5,2z M6.5,6.5c-0.6,0-1-0.4-1-1s0.4-1,1-1s1,0.4,1,1S7.1,6.5,6.5,6.5z M10.5,6.5c-0.6,0-1-0.4-1-1s0.4-1,1-1 s1,0.4,1,1S11.1,6.5,10.5,6.5z"/>
+              <path d="M17.5,9c-2.8,0-5,1.9-5,4.3c0,1.3,0.7,2.5,1.8,3.3c-0.1,0.3-0.2,0.9-0.2,0.9s0.9-0.5,1.3-0.7 c0.1,0,0.1,0,0.2,0.1c0.6,0.2,1.2,0.3,1.9,0.3c0.2,0,0.4,0,0.6-0.1c-0.1-0.2-0.1-0.4-0.1-0.7c0-2.3,2.2-4.2,5-4.2c0.2,0,0.4,0,0.6,0.1 C23.2,10.4,20.6,9,17.5,9z M16,13c-0.4,0-0.8-0.3-0.8-0.8s0.3-0.8,0.8-0.8s0.8,0.3,0.8,0.8S16.4,13,16,13z M19,13 c-0.4,0-0.8-0.3-0.8-0.8s0.3-0.8,0.8-0.8s0.8,0.3,0.8,0.8S19.4,13,19,13z"/>
+            </svg>
+          </div>
+          <div class="qrcode-tooltip">
+            <img :src="blogUser.wechatQrCode" alt="微信二维码" class="qrcode-img" />
+          </div>
+        </div>
         <span class="contact-text" v-if="blogUser?.contactInfo">{{ blogUser.contactInfo }}</span>
-      </div>
-      <div class="wechat-qrcode-section" v-if="blogUser?.wechatQrCode">
-        <el-image 
-          :src="blogUser.wechatQrCode" 
-          fit="contain"
-          class="qrcode-image"
-          :preview-src-list="[blogUser.wechatQrCode]"
-        />
       </div>
       <div class="profile-stats">
         <div class="stat-item">
@@ -123,6 +126,8 @@ onMounted(async () => {
   color: var(--el-text-color-secondary);
   margin-bottom: 16px;
   line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .profile-contact-row {
@@ -157,20 +162,57 @@ onMounted(async () => {
   color: var(--el-text-color-secondary);
 }
 
-.wechat-qrcode-section {
-  margin-top: 16px;
+.wechat-icon-wrapper {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  
+  &:hover .qrcode-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
-.qrcode-image {
-  width: 220px;
-  height: 220px;
-  border-radius: 8px;
+.wechat-icon {
   cursor: pointer;
-  transition: transform 0.3s;
+}
+
+.qrcode-tooltip {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  padding: 8px;
+  background: var(--el-bg-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 1000;
+  pointer-events: none;
+  width: max-content;
+  max-width: 250px;
   
-  &:hover {
-    transform: scale(1.05);
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 8px solid transparent;
+    border-bottom-color: var(--el-bg-color);
   }
+}
+
+.qrcode-img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  border-radius: 4px;
+  display: block;
+  object-fit: contain;
 }
 
 .ad-section {
