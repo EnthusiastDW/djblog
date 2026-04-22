@@ -13,6 +13,7 @@
     "test:report": "playwright show-report"
   },
   "dependencies": {
+    "@guardhivefraudshield/device-fingerprint": "^0.3.0",
     "@vueuse/core": "^14.2.1",
     "axios": "^1.13.6",
     "dayjs": "^1.11.20",

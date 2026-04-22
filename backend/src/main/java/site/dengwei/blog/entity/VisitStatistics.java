@@ -23,7 +23,12 @@ public class VisitStatistics {
     private Long id;
 
     /**
-     * 客户端 IP 地址
+     * 访客设备指纹ID
+     */
+    private String visitorId;
+
+    /**
+     * 客户端 IP 地址（保留用于辅助分析）
      */
     private String ip;
 

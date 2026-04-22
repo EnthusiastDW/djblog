@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import router from '@/router'
+import { getVisitorId } from '@/utils/fingerprint'
 
 const api = axios.create({
   baseURL: '/api',
@@ -12,11 +13,22 @@ const api = axios.create({
 
 // 请求拦截器
 api.interceptors.request.use(
-  config => {
+  async config => {
     const token = localStorage.getItem('token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    
+    // 自动附加访客设备指纹ID
+    try {
+      const visitorId = await getVisitorId()
+      if (visitorId) {
+        config.headers['X-Visitor-ID'] = visitorId
+      }
+    } catch (error) {
+      console.warn('[API] Failed to attach visitor ID:', error)
+    }
+    
     return config
   },
   error => {

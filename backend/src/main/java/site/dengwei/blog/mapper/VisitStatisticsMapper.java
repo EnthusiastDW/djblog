@@ -2,7 +2,6 @@ package site.dengwei.blog.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import site.dengwei.blog.entity.VisitStatistics;
 
@@ -16,7 +15,7 @@ import site.dengwei.blog.entity.VisitStatistics;
 public interface VisitStatisticsMapper extends BaseMapper<VisitStatistics> {
 
     /**
-     * 获取今日访问人数
+     * 获取今日访问人数（按 visitor_id 去重）
      *
      * @return 今日访问人数
      */
@@ -24,10 +23,10 @@ public interface VisitStatisticsMapper extends BaseMapper<VisitStatistics> {
     Long countTodayVisitors();
 
     /**
-     * 获取总访问人数
+     * 获取总访问人数（按 visitor_id 去重）
      *
      * @return 总访问人数
      */
-    @Select("SELECT COUNT(DISTINCT ip) FROM visit_statistics")
+    @Select("SELECT COUNT(DISTINCT visitor_id) FROM visit_statistics WHERE visitor_id IS NOT NULL AND visitor_id != ''")
     Long countTotalVisitors();
 }

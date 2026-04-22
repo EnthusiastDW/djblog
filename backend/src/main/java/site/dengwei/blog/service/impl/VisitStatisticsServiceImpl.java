@@ -28,27 +28,43 @@ public class VisitStatisticsServiceImpl extends ServiceImpl<VisitStatisticsMappe
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void recordVisit(String ip, String userAgent) {
+    public void recordVisit(String visitorId, String ip, String userAgent) {
         LocalDate today = LocalDate.now();
 
-        // 检查今日是否已记录该 IP
-        LambdaQueryWrapper<VisitStatistics> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(VisitStatistics::getIp, ip)
-                .eq(VisitStatistics::getVisitDate, today);
+        // 优先使用 visitorId 去重，如果为空则降级使用 IP（兼容旧数据）
+        String uniqueKey = (visitorId != null && !visitorId.isEmpty()) ? visitorId : ip;
+        
+        if (uniqueKey == null || uniqueKey.isEmpty()) {
+            log.warn("无法记录访问：visitorId 和 IP 均为空");
+            return;
+        }
 
-        Long count = count(wrapper);
+        // 检查今日是否已记录该访客
+        LambdaQueryWrapper<VisitStatistics> wrapper = new LambdaQueryWrapper<>();
+        if (visitorId != null && !visitorId.isEmpty()) {
+            // 使用 visitorId 去重
+            wrapper.eq(VisitStatistics::getVisitorId, visitorId)
+                    .eq(VisitStatistics::getVisitDate, today);
+        } else {
+            // 降级：使用 IP 去重（兼容旧数据或指纹获取失败的情况）
+            wrapper.eq(VisitStatistics::getIp, ip)
+                    .eq(VisitStatistics::getVisitDate, today);
+        }
+
+        long count = count(wrapper);
         if (count == 0) {
             // 未记录，则新增
             VisitStatistics visitStatistics = new VisitStatistics();
+            visitStatistics.setVisitorId(visitorId);
             visitStatistics.setIp(ip);
             visitStatistics.setVisitDate(today);
             visitStatistics.setUserAgent(userAgent);
             try {
                 save(visitStatistics);
-                log.debug("记录访问：IP={}, Date={}", ip, today);
+                log.debug("记录访问：VisitorId={}, IP={}, Date={}", visitorId, ip, today);
             } catch (DuplicateKeyException e) {
                 // 防止并发重复插入，忽略即可
-                log.debug("访问已记录：IP={}, Date={}", ip, today);
+                log.debug("访问已记录：VisitorId={}, IP={}, Date={}", visitorId, ip, today);
             }
         }
     }
