@@ -7,6 +7,29 @@
       </el-button>
       <h2 class="page-title">{{ isEdit ? '编辑文章' : '写文章' }}</h2>
       <div class="header-actions">
+        <!-- 自动保存设置 -->
+        <div class="auto-save-settings">
+          <el-switch
+            v-model="autoSaveEnabled"
+            active-text="自动保存"
+            @change="handleAutoSaveToggle"
+          />
+          <el-select
+            v-model="autoSaveInterval"
+            size="small"
+            style="width: 100px; margin-left: 8px;"
+            :disabled="!autoSaveEnabled"
+            @change="handleIntervalChange"
+          >
+            <el-option label="1分钟" :value="60" />
+            <el-option label="2分钟" :value="120" />
+            <el-option label="5分钟" :value="300" />
+            <el-option label="10分钟" :value="600" />
+          </el-select>
+          <span v-if="lastSaveTime" class="last-save-time">
+            上次保存: {{ formatLastSaveTime }}
+          </span>
+        </div>
         <el-button @click="handleSaveDraft" :loading="saving">保存草稿</el-button>
         <el-button type="primary" @click="handlePublish" :loading="publishing">发布</el-button>
       </div>
@@ -112,7 +135,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { postApi } from '@/api/post'
@@ -139,6 +162,12 @@ const categoryLoading = ref(false)
 const tagLoading = ref(false)
 const summaryLoading = ref(false)
 const categoryDialogVisible = ref(false)
+
+// 自动保存相关
+const autoSaveEnabled = ref(false)
+const autoSaveInterval = ref(120) // 默认2分钟（秒）
+const lastSaveTime = ref(null)
+let autoSaveTimer = null
 
 const isEdit = computed(() => !!route.params.id)
 
@@ -180,6 +209,18 @@ const md = new MarkdownIt({
 const renderedContent = computed(() => {
   if (!form.content) return ''
   return md.render(form.content)
+})
+
+// 格式化上次保存时间
+const formatLastSaveTime = computed(() => {
+  if (!lastSaveTime.value) return ''
+  // 显示精确的保存时间：HH:MM:SS
+  return lastSaveTime.value.toLocaleTimeString('zh-CN', { 
+    hour: '2-digit', 
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  })
 })
 
 async function fetchCategories() {
@@ -314,12 +355,67 @@ async function handleSaveDraft() {
   saving.value = true
   try {
     await postApi.saveDraft(form)
-    ElMessage.success('保存成功')
-    router.push('/admin/posts')
+    lastSaveTime.value = new Date()
+    ElMessage.success('草稿已保存')
+    // 不跳转页面，保持在编辑页
   } catch (e) {
     console.error('保存失败', e)
+    ElMessage.error('保存失败')
   } finally {
     saving.value = false
+  }
+}
+
+// 自动保存（静默保存，不显示成功消息）
+async function autoSaveDraft() {
+  // 如果没有标题或内容，不自动保存
+  if (!form.title && !form.content) return
+  
+  try {
+    await postApi.saveDraft(form)
+    lastSaveTime.value = new Date()
+    console.log('[Auto Save] Draft saved at', lastSaveTime.value)
+  } catch (e) {
+    console.error('[Auto Save] Failed to save draft', e)
+  }
+}
+
+// 启动自动保存定时器
+function startAutoSaveTimer() {
+  stopAutoSaveTimer() // 先清除之前的定时器
+  if (autoSaveEnabled.value && autoSaveInterval.value > 0) {
+    autoSaveTimer = setInterval(() => {
+      autoSaveDraft()
+    }, autoSaveInterval.value * 1000)
+    console.log(`[Auto Save] Timer started, interval: ${autoSaveInterval.value}s`)
+  }
+}
+
+// 停止自动保存定时器
+function stopAutoSaveTimer() {
+  if (autoSaveTimer) {
+    clearInterval(autoSaveTimer)
+    autoSaveTimer = null
+    console.log('[Auto Save] Timer stopped')
+  }
+}
+
+// 切换自动保存
+function handleAutoSaveToggle(enabled) {
+  if (enabled) {
+    startAutoSaveTimer()
+    ElMessage.success('自动保存已开启')
+  } else {
+    stopAutoSaveTimer()
+    ElMessage.info('自动保存已关闭')
+  }
+}
+
+// 更改自动保存间隔
+function handleIntervalChange() {
+  if (autoSaveEnabled.value) {
+    startAutoSaveTimer() // 重启定时器以应用新间隔
+    ElMessage.success(`自动保存间隔已设置为${autoSaveInterval.value / 60}分钟`)
   }
 }
 
@@ -356,6 +452,13 @@ onMounted(() => {
   if (isEdit.value) {
     fetchPost()
   }
+  // 启动自动保存
+  startAutoSaveTimer()
+})
+
+// 组件卸载时清除定时器
+onUnmounted(() => {
+  stopAutoSaveTimer()
 })
 
 watch(() => appStore.theme, (newTheme) => {
@@ -367,11 +470,28 @@ watch(() => appStore.theme, (newTheme) => {
 @import '@/assets/styles/_markdown.scss';
 
 .admin-post-edit {
+  // 使用负边距抵消父容器的 padding，让 header 占满宽度
+  margin: -20px;
+  padding: 20px;
+
   .page-header {
     display: flex;
     align-items: center;
     gap: 16px;
-    margin-bottom: 20px;
+    margin: -20px -20px 20px -20px; // 负边距抵消容器 padding
+    padding: 16px 20px;
+    background: var(--el-bg-color);
+    border-radius: 0; // 移除圆角，紧贴边缘
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    position: sticky;
+    top: -20px; // 调整为负值，紧贴顶部
+    z-index: 100;
+    transition: box-shadow 0.3s;
+
+    // 滚动时增强阴影效果
+    &:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
   }
 
   .page-title {
@@ -383,7 +503,20 @@ watch(() => appStore.theme, (newTheme) => {
 
   .header-actions {
     display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .auto-save-settings {
+    display: flex;
+    align-items: center;
     gap: 8px;
+  }
+
+  .last-save-time {
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+    white-space: nowrap;
   }
 
   .category-select-wrapper {

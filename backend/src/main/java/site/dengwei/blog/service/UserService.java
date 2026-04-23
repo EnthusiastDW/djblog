@@ -61,4 +61,17 @@ public interface UserService extends IService<User> {
      * @return 脱敏后的用户信息
      */
     User getPublicUser(Long id);
+
+    /**
+     * 获取博主的"关于我"内容
+     * @return Markdown格式的内容
+     */
+    String getAboutContent();
+
+    /**
+     * 更新"关于我"内容
+     * @param request 更新请求
+     * @return 是否成功
+     */
+    boolean updateAboutContent(UpdateAboutRequest request);
 }

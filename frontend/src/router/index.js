@@ -77,6 +77,12 @@ const routes = [
         name: 'Profile',
         component: () => import('@/views/profile/Index.vue'),
         meta: { title: '个人中心', requiresAuth: true }
+      },
+      {
+        path: 'about',
+        name: 'About',
+        component: () => import('@/views/about/Index.vue'),
+        meta: { title: '关于' }
       }
     ]
   },
@@ -144,6 +150,12 @@ const routes = [
         name: 'AdminSettings',
         component: () => import('@/views/admin/settings/Index.vue'),
         meta: { title: '全局设置' }
+      },
+      {
+        path: 'about',
+        name: 'AdminAbout',
+        component: () => import('@/views/admin/about/Index.vue'),
+        meta: { title: '关于我配置' }
       },
       {
         path: 'posts/import',

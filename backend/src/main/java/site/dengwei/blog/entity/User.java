@@ -69,6 +69,11 @@ public class User extends Model<User> implements Serializable, UserDetails {
     private String wechatQrCode;
 
     /**
+     * 关于我（Markdown格式）
+     */
+    private String aboutContent;
+
+    /**
      * 角色
      */
     private String role;

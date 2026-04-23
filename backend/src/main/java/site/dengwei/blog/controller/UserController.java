@@ -70,4 +70,20 @@ public class UserController {
     public Response<Boolean> delete(@Valid @RequestBody DeleteRequest request) {
         return Response.success(userService.deleteUsers(request));
     }
+
+    /**
+     * 获取博主的"关于我"内容（公开接口）
+     */
+    @GetMapping("/about")
+    public Response<String> getAboutContent() {
+        return Response.success(userService.getAboutContent());
+    }
+
+    /**
+     * 更新"关于我"内容（需要登录）
+     */
+    @PutMapping("/about")
+    public Response<Boolean> updateAboutContent(@Valid @RequestBody UpdateAboutRequest request) {
+        return Response.success(userService.updateAboutContent(request));
+    }
 }

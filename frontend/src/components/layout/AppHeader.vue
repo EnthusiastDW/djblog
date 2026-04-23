@@ -15,10 +15,22 @@
         <router-link to="/" class="logo">
           <span class="logo-text">{{ logoText }}</span>
         </router-link>
+      </div>
+      <div class="header-right">
+        <div class="search-box">
+            <el-input
+              v-model="searchKeyword"
+              placeholder="搜索文章..."
+              :prefix-icon="Search"
+              clearable
+              @keyup.enter="handleSearch"
+            />
+        </div>
+        <el-icon class="theme-btn" @click="toggleTheme">
+            <Sunny v-if="appStore.theme === 'dark'" />
+            <Moon v-else />
+        </el-icon>
         <nav class="nav-menu">
-          <router-link to="/" class="nav-item" :class="{ active: route.path === '/' }">
-            首页
-          </router-link>
           <router-link to="/archives" class="nav-item" :class="{ active: route.path.startsWith('/archives') }">
             归档
           </router-link>
@@ -28,22 +40,11 @@
           <router-link to="/tags" class="nav-item" :class="{ active: route.path.startsWith('/tags') }">
             标签
           </router-link>
+          <router-link to="/about" class="nav-item" :class="{ active: route.path === '/about' }">
+            关于
+          </router-link>
         </nav>
-      </div>
-      <div class="header-right">
-        <div class="search-box">
-          <el-input
-            v-model="searchKeyword"
-            placeholder="搜索文章..."
-            :prefix-icon="Search"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </div>
-        <el-icon class="theme-btn" @click="toggleTheme">
-          <Sunny v-if="appStore.theme === 'dark'" />
-          <Moon v-else />
-        </el-icon>
+
         <template v-if="userStore.isLoggedIn">
           <el-dropdown>
             <span class="user-dropdown">
@@ -167,9 +168,15 @@ onMounted(async () => {
   color: var(--el-color-primary);
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .nav-menu {
   display: flex;
-  gap: 32px;
+  gap: 24px;
 }
 
 .nav-item {
@@ -182,12 +189,6 @@ onMounted(async () => {
   &.active {
     color: var(--el-color-primary);
   }
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
 }
 
 .mobile-menu-btn {

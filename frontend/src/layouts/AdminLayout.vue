@@ -44,6 +44,10 @@
           <el-icon><Setting /></el-icon>
           <template #title>全局设置</template>
         </el-menu-item>
+        <el-menu-item index="/admin/about">
+          <el-icon><InfoFilled /></el-icon>
+          <template #title>关于我配置</template>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     <el-container>
@@ -99,7 +103,7 @@ import { useUserStore } from '@/stores/user'
 import { useAppStore } from '@/stores/app'
 import {
   Odometer, Document, Folder, PriceTag, ChatDotRound, User,
-  Expand, Fold, Sunny, Moon, ArrowDown, Setting
+  Expand, Fold, Sunny, Moon, ArrowDown, Setting, InfoFilled
 } from '@element-plus/icons-vue'
 
 const route = useRoute()

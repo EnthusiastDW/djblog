@@ -33,5 +33,15 @@ export const userApi = {
   // 删除用户
   delete(data) {
     return api.delete('/user', { data })
+  },
+
+  // 获取关于我内容
+  getAbout() {
+    return api.get('/user/about')
+  },
+
+  // 更新关于我内容
+  updateAbout(data) {
+    return api.put('/user/about', data)
   }
 }

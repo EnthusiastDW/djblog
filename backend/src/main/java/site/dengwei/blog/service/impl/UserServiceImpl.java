@@ -131,4 +131,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         publicUser.setWechatQrCode(user.getWechatQrCode());
         return publicUser;
     }
+
+    @Override
+    public String getAboutContent() {
+        // 获取第一个用户（博主）的about_content
+        User user = getOne(new LambdaQueryWrapper<User>().orderByAsc(User::getId).last("LIMIT 1"));
+        if (user == null) {
+            return "";
+        }
+        return user.getAboutContent() != null ? user.getAboutContent() : "";
+    }
+
+    @Override
+    public boolean updateAboutContent(UpdateAboutRequest request) {
+        log.info("更新关于我内容");
+        // 获取第一个用户（博主）
+        User user = getOne(new LambdaQueryWrapper<User>().orderByAsc(User::getId).last("LIMIT 1"));
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+        user.setAboutContent(request.getAboutContent());
+        return updateById(user);
+    }
 }
