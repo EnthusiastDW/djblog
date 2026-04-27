@@ -14,6 +14,7 @@ import site.dengwei.blog.entity.User;
 import site.dengwei.blog.exception.BusinessException;
 import site.dengwei.blog.service.UserService;
 import site.dengwei.blog.dto.Response;
+import site.dengwei.blog.dto.AuthResponse;
 
 import java.util.Arrays;
 
@@ -123,15 +124,18 @@ class UserControllerTest {
         UpdateUserRequest request = new UpdateUserRequest();
         request.setId(1L);
         request.setEmail("updated@example.com");
-        when(userService.updateUser(any(UpdateUserRequest.class))).thenReturn(true);
+        AuthResponse authResponse = new AuthResponse();
+        authResponse.setToken("test-token");
+        when(userService.updateUser(any(UpdateUserRequest.class))).thenReturn(authResponse);
 
         // When
-        Response<Boolean> response = userController.update(request);
+        Response<AuthResponse> response = userController.update(request);
 
         // Then
-        assertNotNull(response);
-        assertEquals(200, response.getCode());
-        assertTrue(response.getData());
+        assertNotNull(response, "响应不应为null");
+        assertEquals(Integer.valueOf(200), response.getCode(), "响应码应为200");
+        assertNotNull(response.getData(), "更新结果不应为null");
+        assertEquals("test-token", response.getData().getToken(), "应返回token");
         verify(userService).updateUser(any(UpdateUserRequest.class));
     }
 
