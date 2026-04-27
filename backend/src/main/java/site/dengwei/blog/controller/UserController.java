@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import site.dengwei.blog.dto.AuthResponse;
 import site.dengwei.blog.dto.request.*;
 import site.dengwei.blog.entity.User;
 import site.dengwei.blog.service.UserService;
@@ -59,7 +60,7 @@ public class UserController {
      * 更新用户
      */
     @PutMapping
-    public Response<Boolean> update(@Valid @RequestBody UpdateUserRequest request) {
+    public Response<AuthResponse> update(@Valid @RequestBody UpdateUserRequest request) {
         return Response.success(userService.updateUser(request));
     }
 

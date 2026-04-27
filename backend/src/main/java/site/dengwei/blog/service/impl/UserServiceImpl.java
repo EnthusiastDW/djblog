@@ -6,12 +6,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import site.dengwei.blog.dto.AuthResponse;
 import site.dengwei.blog.dto.RegisterRequest;
 import site.dengwei.blog.dto.request.*;
 import site.dengwei.blog.entity.User;
 import site.dengwei.blog.exception.BusinessException;
 import site.dengwei.blog.mapper.UserMapper;
 import site.dengwei.blog.service.UserService;
+import site.dengwei.blog.util.JwtUtil;
 
 /**
  * 用户服务实现类
@@ -25,6 +27,7 @@ import site.dengwei.blog.service.UserService;
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
     @Override
     public User getByIdOrThrow(Long id) {
@@ -81,9 +84,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public boolean updateUser(UpdateUserRequest request) {
+    public AuthResponse updateUser(UpdateUserRequest request) {
         log.info("更新用户，ID: {}", request.getId());
         User user = getByIdOrThrow(request.getId());
+        
+        // 记录旧用户名，用于判断是否修改了用户名
+        String oldUsername = user.getUsername();
+        
+        if (request.getUsername() != null) {
+            // 检查用户名是否已被其他用户使用
+            User existingUser = getOne(
+                    new LambdaQueryWrapper<User>()
+                            .eq(User::getUsername, request.getUsername())
+                            .ne(User::getId, request.getId())
+            );
+            if (existingUser != null) {
+                log.warn("用户名已被占用: {}", request.getUsername());
+                throw new BusinessException("用户名已被占用");
+            }
+            user.setUsername(request.getUsername());
+        }
         if (request.getEmail() != null) {
             user.setEmail(request.getEmail());
         }
@@ -102,7 +122,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (request.getRole() != null) {
             user.setRole(request.getRole());
         }
-        return updateById(user);
+        
+        boolean success = updateById(user);
+        
+        // 构建响应
+        AuthResponse response = new AuthResponse();
+        response.setUser(user);
+        
+        // 如果用户名被修改，生成新的 token
+        if (success && request.getUsername() != null && !request.getUsername().equals(oldUsername)) {
+            String newToken = jwtUtil.generateToken(user.getUsername());
+            response.setToken(newToken);
+            log.info("用户名已修改，生成新 token: {} -> {}", oldUsername, user.getUsername());
+        }
+        
+        return response;
     }
 
     @Override

@@ -16,7 +16,7 @@
       </template>
       <el-form :model="form" label-width="80px">
         <el-form-item label="用户名">
-          <el-input v-model="form.username" disabled />
+          <el-input v-model="form.username" placeholder="请输入用户名" />
         </el-form-item>
         <el-form-item label="邮箱">
           <el-input v-model="form.email" />
@@ -81,24 +81,43 @@ onMounted(() => {
 async function handleUpdate() {
   loading.value = true
   try {
-    await userApi.update({
+    const res = await userApi.update({
       id: userStore.user.id,
+      username: form.username,
       email: form.email,
       avatarUrl: form.avatarUrl,
       contactInfo: form.contactInfo,
       bio: form.bio,
       wechatQrCode: form.wechatQrCode
     })
-    userStore.updateUserInfo({
-      email: form.email,
-      avatarUrl: form.avatarUrl,
-      contactInfo: form.contactInfo,
-      bio: form.bio,
-      wechatQrCode: form.wechatQrCode
-    })
-    ElMessage.success('保存成功')
-    // 刷新页面数据
-    window.location.reload()
+    
+    // 如果返回了新 token，说明用户名被修改了，需要更新 token
+    if (res.data.token) {
+      userStore.$patch({
+        token: res.data.token,
+        user: res.data.user
+      })
+      localStorage.setItem('token', res.data.token)
+      localStorage.setItem('user', JSON.stringify(res.data.user))
+      ElMessage.success('保存成功，请重新登录')
+      // 延迟后刷新页面以应用新 token
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
+    } else {
+      // 没有新 token，只更新用户信息
+      userStore.updateUserInfo({
+        username: form.username,
+        email: form.email,
+        avatarUrl: form.avatarUrl,
+        contactInfo: form.contactInfo,
+        bio: form.bio,
+        wechatQrCode: form.wechatQrCode
+      })
+      ElMessage.success('保存成功')
+      // 刷新页面数据
+      window.location.reload()
+    }
   } catch (e) {
     console.error('保存失败', e)
   } finally {

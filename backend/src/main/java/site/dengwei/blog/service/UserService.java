@@ -1,6 +1,7 @@
 package site.dengwei.blog.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import site.dengwei.blog.dto.AuthResponse;
 import site.dengwei.blog.dto.RegisterRequest;
 import site.dengwei.blog.dto.request.*;
 import site.dengwei.blog.entity.User;
@@ -37,9 +38,9 @@ public interface UserService extends IService<User> {
     /**
      * 更新用户
      * @param request 更新请求
-     * @return 是否成功
+     * @return 认证响应（包含新token和用户信息）
      */
-    boolean updateUser(UpdateUserRequest request);
+    AuthResponse updateUser(UpdateUserRequest request);
 
     /**
      * 删除用户

@@ -21,6 +21,12 @@ public class UpdateUserRequest {
     private Long id;
 
     /**
+     * 用户名
+     */
+    @Size(min = 2, max = 50, message = "用户名长度在2-50个字符之间")
+    private String username;
+
+    /**
      * 邮箱
      */
     @Email(message = "邮箱格式不正确")

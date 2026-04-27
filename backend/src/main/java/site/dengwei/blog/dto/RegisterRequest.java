@@ -24,7 +24,7 @@ public class RegisterRequest implements Serializable {
      * 用户名
      */
     @NotBlank(message = "用户名不能为空")
-    @Size(min = 3, max = 50, message = "用户名长度在3-50个字符之间")
+    @Size(min = 2, max = 50, message = "用户名长度在2-50个字符之间")
     private String username;
 
     /**

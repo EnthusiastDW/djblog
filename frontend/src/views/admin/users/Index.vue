@@ -47,7 +47,7 @@
     <el-dialog v-model="dialogVisible" title="编辑用户" width="500px">
       <el-form :model="form" ref="formRef" label-width="80px">
         <el-form-item label="用户名">
-          <el-input v-model="form.username" disabled />
+          <el-input v-model="form.username" placeholder="请输入用户名" />
         </el-form-item>
         <el-form-item label="邮箱">
           <el-input v-model="form.email" />
@@ -85,8 +85,11 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { userApi } from '@/api/user'
+import { useUserStore } from '@/stores/user'
 import { formatDate } from '@/utils/format'
 import { ElMessage } from 'element-plus'
+
+const userStore = useUserStore()
 
 const users = ref([])
 const loading = ref(false)
@@ -143,7 +146,7 @@ function handleEdit(row) {
 async function handleSubmit() {
   submitting.value = true
   try {
-    await userApi.update({
+    const res = await userApi.update({
       id: form.id,
       username: form.username,
       email: form.email,
@@ -152,7 +155,23 @@ async function handleSubmit() {
       wechatQrCode: form.wechatQrCode,
       role: form.role
     })
-    ElMessage.success('更新成功')
+    
+    // 如果返回了新 token，说明用户名被修改了，需要更新当前用户的 token
+    if (res.data.token && userStore.user?.id === form.id) {
+      userStore.$patch({
+        token: res.data.token,
+        user: res.data.user
+      })
+      localStorage.setItem('token', res.data.token)
+      localStorage.setItem('user', JSON.stringify(res.data.user))
+      ElMessage.success('更新成功，请重新登录')
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
+    } else {
+      ElMessage.success('更新成功')
+    }
+    
     dialogVisible.value = false
     fetchUsers()
   } catch (e) {
