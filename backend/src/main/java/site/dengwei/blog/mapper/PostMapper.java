@@ -91,4 +91,12 @@ public interface PostMapper extends BaseMapper<Post> {
      */
     @Select("SELECT * FROM post WHERE status = 'PUBLISHED' ORDER BY view_count DESC LIMIT #{limit}")
     List<Post> selectPopularPosts(@Param("limit") int limit);
+
+    /**
+     * 批量更新文章浏览量
+     * @param postId 文章ID
+     * @param viewCount 浏览量
+     */
+    @org.apache.ibatis.annotations.Update("UPDATE post SET view_count = #{viewCount} WHERE id = #{postId}")
+    void updateViewCount(@Param("postId") Long postId, @Param("viewCount") Long viewCount);
 }

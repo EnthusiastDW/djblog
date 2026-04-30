@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import site.dengwei.blog.entity.VisitStatistics;
@@ -26,6 +27,7 @@ public class VisitStatisticsServiceImpl extends ServiceImpl<VisitStatisticsMappe
 
     private final VisitStatisticsMapper visitStatisticsMapper;
 
+    @Async
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void recordVisit(String visitorId, String ip, String userAgent) {

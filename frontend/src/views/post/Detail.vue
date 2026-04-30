@@ -319,7 +319,7 @@ async function fetchPostDetail() {
     
     if (post.value?.id) {
       await fetchComments(post.value.id)
-      postApi.incrementViewCount(post.value.id).catch(() => {})
+      // 浏览量统计由后端拦截器自动处理，无需前端调用
 
       // 获取分类路径（用于显示层级路径）
       if (post.value.categoryId) {

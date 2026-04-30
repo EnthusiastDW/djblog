@@ -102,7 +102,8 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         dto.setStatus(post.getStatus() != null ? post.getStatus().name() : null);
         dto.setAuthorId(post.getAuthorId());
         dto.setCategoryId(post.getCategoryId());
-        dto.setViewCount(post.getViewCount());
+        // 直接从 post 表读取浏览量（已定期同步）
+        dto.setViewCount(post.getViewCount() != null ? post.getViewCount() : 0L);
         
         if (post.getPublishedAt() != null) {
             dto.setPublishedAt(java.util.Date.from(post.getPublishedAt().atZone(java.time.ZoneId.systemDefault()).toInstant()));
@@ -276,7 +277,8 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         List<Tag> tags = postMapper.selectTagsByPostId(post.getId());
         dto.setTags(tags);
         
-        dto.setViewCount(post.getViewCount());
+        // 直接从 post 表读取浏览量（已定期同步）
+        dto.setViewCount(post.getViewCount() != null ? post.getViewCount() : 0L);
         
         return dto;
     }
@@ -548,25 +550,13 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
 
     @Override
     public Long getTotalViewCount() {
+        // 直接从数据库查询总浏览量（已定期同步到 post 表）
         return postMapper.selectTotalViewCount();
     }
 
     @Override
-    public boolean incrementViewCount(Long id) {
-        Post post = getById(id);
-        if (post == null) {
-            return false;
-        }
-        Long currentCount = post.getViewCount();
-        if (currentCount == null) {
-            currentCount = 0L;
-        }
-        post.setViewCount(currentCount + 1);
-        return updateById(post);
-    }
-
-    @Override
     public List<Post> getPopularPosts(int limit) {
+        // 直接使用 SQL 查询，按 view_count 降序排序（已定期同步到 post 表）
         return postMapper.selectPopularPosts(limit);
     }
 

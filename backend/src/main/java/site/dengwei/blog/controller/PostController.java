@@ -1,8 +1,8 @@
 package site.dengwei.blog.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,17 +12,16 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import site.dengwei.blog.dto.PostDetailDTO;
 import site.dengwei.blog.dto.PostListDTO;
+import site.dengwei.blog.dto.Response;
 import site.dengwei.blog.dto.request.*;
 import site.dengwei.blog.entity.Post;
 import site.dengwei.blog.enums.PostStatus;
 import site.dengwei.blog.service.AiSummaryService;
 import site.dengwei.blog.service.PostService;
-import site.dengwei.blog.util.LambdaQueryUtils;
-import site.dengwei.blog.dto.Response;
+import site.dengwei.blog.service.PostVisitStatisticsService;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 
@@ -40,6 +39,7 @@ public class PostController {
     
     private final PostService postService;
     private final AiSummaryService aiSummaryService;
+    private final PostVisitStatisticsService postVisitStatisticsService;
 
     /**
      * 分页查询所有文章
@@ -100,11 +100,24 @@ public class PostController {
     }
     
     /**
-     * 根据 slug 查询文章详情（SEO 友好 URL）
+     * 根据 slug 查询文章详情(SEO 友好 URL)
      */
     @GetMapping("/slug/{slug}")
-    public Response<PostDetailDTO> getBySlug(@PathVariable String slug) {
-        return Response.success(postService.getPostBySlugOrThrow(slug));
+    public Response<PostDetailDTO> getBySlug(@PathVariable String slug, HttpServletRequest request) {
+        PostDetailDTO post = postService.getPostBySlugOrThrow(slug);
+        
+        // 异步记录文章访问统计（不阻塞主流程）
+        try {
+            String visitorId = request.getHeader("X-Visitor-ID");
+            if (visitorId != null && !visitorId.isEmpty()) {
+                postVisitStatisticsService.recordPostVisitAsync(post.getId(), visitorId);
+            }
+        } catch (Exception e) {
+            // 忽略统计异常，不影响主流程
+            log.debug("记录文章访问统计失败", e);
+        }
+        
+        return Response.success(post);
     }
 
     /**
@@ -214,11 +227,6 @@ public class PostController {
     @GetMapping("/stats/views")
     public Response<Long> getTotalViewCount() {
         return Response.success(postService.getTotalViewCount());
-    }
-
-    @PostMapping("/{id}/view")
-    public Response<Boolean> incrementViewCount(@PathVariable Long id) {
-        return Response.success(postService.incrementViewCount(id));
     }
 
     /**

@@ -101,11 +101,6 @@ export const postApi = {
     return api.get('/post/stats/views')
   },
 
-  // 增加阅读量
-  incrementViewCount(id) {
-    return api.post(`/post/${id}/view`)
-  },
-
   // 获取热门文章
   getPopular(params = {}) {
     return api.get('/post/popular', { params })

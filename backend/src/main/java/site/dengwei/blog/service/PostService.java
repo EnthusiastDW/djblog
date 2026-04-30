@@ -135,11 +135,6 @@ public interface PostService extends IService<Post> {
     Long getTotalViewCount();
 
     /**
-     * 增加文章阅读量
-     */
-    boolean incrementViewCount(Long id);
-
-    /**
      * 获取热门文章列表（按访问量排序）
      * @param limit 数量限制
      * @return 热门文章列表

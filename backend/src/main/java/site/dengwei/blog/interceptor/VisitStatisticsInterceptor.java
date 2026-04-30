@@ -10,7 +10,8 @@ import site.dengwei.blog.service.VisitStatisticsService;
 import site.dengwei.blog.util.RequestContextUtil;
 
 /**
- * 访问统计拦截器
+ * 全站访问统计拦截器
+ * 用于统计整个网站的访问量（UV）
  *
  * @author dengwei
  * @since 2026-04-03
@@ -29,7 +30,7 @@ public class VisitStatisticsInterceptor implements HandlerInterceptor {
         String ip = RequestContextUtil.getClientIp(request);
         String userAgent = request.getHeader("User-Agent");
         
-        // 记录访问（优先使用 visitorId 去重）
+        // 记录全站访问（优先使用 visitorId 去重）
         visitStatisticsService.recordVisit(visitorId, ip, userAgent);
     }
 }
