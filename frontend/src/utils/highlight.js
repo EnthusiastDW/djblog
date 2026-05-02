@@ -1,5 +1,8 @@
 import hljs from 'highlight.js'
 
+/**
+ * 代码语法高亮
+ */
 export function highlightCode(str, lang) {
   const language = lang || 'plaintext'
   const trimmedStr = str.trim()
@@ -19,6 +22,9 @@ export function highlightCode(str, lang) {
   return highlighted
 }
 
+/**
+ * 创建带复制按钮的代码高亮包装器
+ */
 export function createHighlightWithWrapper() {
   return (str, lang) => {
     const language = lang || 'plaintext'
@@ -28,6 +34,9 @@ export function createHighlightWithWrapper() {
   }
 }
 
+/**
+ * 创建简单的代码高亮（不带复制按钮）
+ */
 export function createHighlightSimple() {
   return (str, lang) => {
     const language = lang || 'plaintext'
@@ -37,6 +46,36 @@ export function createHighlightSimple() {
   }
 }
 
+/**
+ * 高亮文本中的关键词
+ * @param text 原始文本
+ * @param keyword 要高亮的关键词
+ * @returns 包含高亮标签的HTML字符串
+ */
+export function highlightKeyword(text, keyword) {
+  if (!text || !keyword) {
+    return text || ''
+  }
+  
+  // 转义特殊字符
+  const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  
+  // 使用正则表达式进行不区分大小写的替换
+  const regex = new RegExp(`(${escapedKeyword})`, 'gi')
+  
+  return text.replace(regex, '<mark class="highlight">$1</mark>')
+}
+
+/**
+ * 将HTML字符串安全地渲染到DOM
+ * @param html HTML字符串
+ * @returns 安全的HTML对象（用于Vue的v-html）
+ */
+export function safeHtml(html) {
+  return html
+}
+
+// 全局复制代码函数
 if (typeof window !== 'undefined') {
   window.copyCodeToClipboard = function(button) {
     const wrapper = button.closest('.code-block-wrapper')

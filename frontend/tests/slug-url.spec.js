@@ -137,7 +137,7 @@ test.describe('文章 Slug URL 功能测试', () => {
     }
   })
 
-  test('搜索结果页文章链接使用 slug', async ({ page, request }) => {
+  test('搜索建议中文章链接使用 slug', async ({ page, request }) => {
     // 先通过 API 搜索文章
     const apiResponse = await request.get('http://localhost:8801/post/search?keyword=test&page=1&size=1')
     const apiData = await apiResponse.json()
@@ -146,22 +146,32 @@ test.describe('文章 Slug URL 功能测试', () => {
     if (apiData.data && apiData.data.records && apiData.data.records.length > 0) {
       const post = apiData.data.records[0]
       
-      // 访问搜索页面
-      await page.goto('/search?keyword=test')
-      await page.waitForTimeout(1000)
+      // 访问首页
+      await page.goto('/')
+      await page.waitForTimeout(500)
       
-      // 获取文章卡片
-      const postCard = page.locator('.post-card').first()
-      const href = await postCard.getAttribute('onclick')
+      // 输入搜索关键词
+      await page.fill('.search-box input', 'test')
       
-      // 验证链接格式是否为 /article/{slug}
-      if (href) {
-        const match = href.match(/router\.push\(`\/article\/(.+)`\)/)
-        if (match) {
-          const slug = match[1]
-          // slug 不应该是纯数字（ID）
-          expect(/^\d+$/.test(slug)).toBe(false)
-        }
+      // 等待搜索建议出现（防抖500ms）
+      await page.waitForTimeout(600)
+      
+      // 获取第一个搜索建议项
+      const suggestionItem = page.locator('.suggestion-item').first()
+      await expect(suggestionItem).toBeVisible()
+      
+      // 点击建议项
+      await suggestionItem.click()
+      
+      // 验证跳转到正确的 URL
+      await expect(page).toHaveURL(/.*\/article\/.+/)
+      
+      // 验证 URL 中的 slug 不是纯数字
+      const currentUrl = page.url()
+      const match = currentUrl.match(/\/article\/(.+)$/)
+      if (match) {
+        const slug = match[1]
+        expect(/^\d+$/.test(slug)).toBe(false)
       }
     } else {
       test.skip(true, '没有搜索到文章，跳过测试')

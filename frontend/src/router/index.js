@@ -61,12 +61,6 @@ const routes = [
         meta: { title: '标签文章' }
       },
       {
-        path: 'search',
-        name: 'Search',
-        component: () => import('@/views/post/Search.vue'),
-        meta: { title: '搜索结果' }
-      },
-      {
         path: 'user/:id',
         name: 'UserProfile',
         component: () => import('@/views/user/Index.vue'),

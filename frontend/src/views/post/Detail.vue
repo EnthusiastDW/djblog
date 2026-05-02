@@ -506,6 +506,23 @@ onMounted(() => {
 watch(() => appStore.theme, (newTheme) => {
   loadHighlightTheme(newTheme)
 })
+
+// 监听路由参数变化，重新加载文章
+watch(() => route.params.slug, (newSlug) => {
+  if (newSlug) {
+    // 重置状态
+    post.value = null
+    comments.value = []
+    commentContent.value = ''
+    replyingTo.value = null
+    
+    // 滚动到顶部
+    window.scrollTo(0, 0)
+    
+    // 重新加载文章
+    fetchPostDetail()
+  }
+})
 </script>
 
 <style lang="scss" scoped>

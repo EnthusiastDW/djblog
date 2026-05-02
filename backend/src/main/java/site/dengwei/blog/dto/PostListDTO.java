@@ -97,4 +97,10 @@ public class PostListDTO implements Serializable {
      * 浏览次数
      */
     private Long viewCount;
+    
+    /**
+     * 匹配的内容片段（用于搜索高亮显示）
+     */
+    @TableField(exist = false)
+    private String matchedContent;
 }

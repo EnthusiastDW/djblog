@@ -32,10 +32,12 @@ test.describe('首页测试', () => {
     
     // 输入搜索关键词
     await page.fill('.search-box input', '测试文章')
-    await page.press('.search-box input', 'Enter')
     
-    // 验证跳转到搜索页面
-    await expect(page).toHaveURL(/.*search\?keyword=/)
+    // 等待搜索建议出现（防抖500ms）
+    await page.waitForTimeout(600)
+    
+    // 验证搜索建议下拉列表显示
+    await expect(page.locator('.suggestions-dropdown')).toBeVisible()
   })
 })
 

@@ -134,17 +134,21 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     public Page<PostListDTO> searchPostsAdvanced(String keyword, String title, String summary, Long categoryId, Long tagId, Long authorId, Page<Post> page, PostStatus status) {
         LambdaQueryWrapper<Post> wrapper = new LambdaQueryWrapper<>();
         
+        // 默认只查询已发布的文章，除非明确指定其他状态
         if (status != null) {
             wrapper.eq(Post::getStatus, status);
+        } else {
+            wrapper.eq(Post::getStatus, PostStatus.PUBLISHED);
         }
         
         if (StringUtils.hasText(keyword)) {
+            String trimmedKeyword = keyword.trim();
             wrapper.and(w -> w
-                .like(Post::getTitle, keyword.trim())
+                .like(Post::getTitle, trimmedKeyword)
                 .or()
-                .like(Post::getContent, keyword.trim())
+                .like(Post::getContent, trimmedKeyword)
                 .or()
-                .like(Post::getSummary, keyword.trim())
+                .like(Post::getSummary, trimmedKeyword)
             );
         }
         
@@ -175,8 +179,17 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         wrapper.orderByDesc(Post::getPublishedAt);
         Page<Post> postPage = page(page, wrapper);
         
+        // 转换为 DTO 并填充分类、标签和匹配内容
+        String searchKeyword = keyword;
         List<PostListDTO> dtoList = postPage.getRecords().stream()
-                .map(this::convertToDTO)
+                .map(post -> {
+                    PostListDTO dto = convertToDTO(post);
+                    // 如果有关键词，提取匹配内容片段
+                    if (StringUtils.hasText(searchKeyword)) {
+                        dto.setMatchedContent(extractMatchedContent(post, searchKeyword.trim()));
+                    }
+                    return dto;
+                })
                 .toList();
         
         Page<PostListDTO> dtoPage = new Page<>(postPage.getCurrent(), postPage.getSize(), postPage.getTotal());
@@ -691,5 +704,64 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
             log.warn("日期解析失败：{}, 使用当前时间", dateTimeStr);
             return LocalDateTime.now();
         }
+    }
+    
+    /**
+     * 提取匹配内容片段
+     * @param post 文章对象
+     * @param keyword 搜索关键词
+     * @return 匹配的内容片段，前后各保留30个字符（适合前端2行显示）
+     */
+    private String extractMatchedContent(Post post, String keyword) {
+        if (!StringUtils.hasText(keyword)) {
+            return null;
+        }
+        
+        // 将关键词转为小写，用于查找
+        String lowerKeyword = keyword.toLowerCase();
+        
+        // 优先从摘要中查找
+        if (StringUtils.hasText(post.getSummary())) {
+            int index = post.getSummary().toLowerCase().indexOf(lowerKeyword);
+            if (index != -1) {
+                return extractSnippet(post.getSummary(), index, keyword, 30);
+            }
+        }
+        
+        // 从内容中查找
+        if (StringUtils.hasText(post.getContent())) {
+            int index = post.getContent().toLowerCase().indexOf(lowerKeyword);
+            if (index != -1) {
+                return extractSnippet(post.getContent(), index, keyword, 30);
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * 提取文本片段，以指定位置为中心，前后各保留 contextLength 个字符
+     * @param text 原文本
+     * @param matchIndex 匹配位置的索引
+     * @param keyword 关键词
+     * @param contextLength 上下文长度
+     * @return 提取的片段
+     */
+    private String extractSnippet(String text, int matchIndex, String keyword, int contextLength) {
+        int start = Math.max(0, matchIndex - contextLength);
+        int end = Math.min(text.length(), matchIndex + keyword.length() + contextLength);
+        
+        String snippet = text.substring(start, end);
+        
+        // 如果不在开头，添加省略号
+        if (start > 0) {
+            snippet = "..." + snippet;
+        }
+        // 如果不在结尾，添加省略号
+        if (end < text.length()) {
+            snippet = snippet + "...";
+        }
+        
+        return snippet;
     }
 }
