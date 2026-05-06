@@ -21,16 +21,6 @@ import java.util.Map;
 public interface PostMapper extends BaseMapper<Post> {
 
 
-
-    /**
-     * 搜索文章标题和内容
-     * @param keyword 搜索关键词
-     * @param page 分页对象
-     * @return 分页结果
-     */
-    @Select("SELECT * FROM post WHERE (title LIKE CONCAT('%', #{keyword}, '%') OR content LIKE CONCAT('%', #{keyword}, '%')) AND status = 'PUBLISHED'")
-    Page<Post> searchPosts(@Param("keyword") String keyword, Page<Post> page);
-
     /**
      * 根据标签 ID 查询文章 ID 列表
      * @param tagId 标签 ID
@@ -99,4 +89,11 @@ public interface PostMapper extends BaseMapper<Post> {
      */
     @org.apache.ibatis.annotations.Update("UPDATE post SET view_count = #{viewCount} WHERE id = #{postId}")
     void updateViewCount(@Param("postId") Long postId, @Param("viewCount") Long viewCount);
+
+    /**
+     * 递增文章浏览量（原子操作）
+     * @param postId 文章ID
+     */
+    @org.apache.ibatis.annotations.Update("UPDATE post SET view_count = view_count + 1 WHERE id = #{postId}")
+    void incrementViewCount(@Param("postId") Long postId);
 }

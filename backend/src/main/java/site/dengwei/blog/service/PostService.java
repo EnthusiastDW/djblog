@@ -35,11 +35,6 @@ public interface PostService extends IService<Post> {
     PostDetailDTO getPostBySlugOrThrow(String slug);
 
     /**
-     * 搜索文章
-     */
-    Page<Post> searchPosts(String keyword, Page<Post> page);
-
-    /**
      * 高级搜索（支持标题、摘要、标签、分类、作者）
      */
     Page<PostListDTO> searchPostsAdvanced(String keyword, String title, String summary, Long categoryId, Long tagId, Long authorId, Page<Post> page, PostStatus status);
@@ -63,11 +58,6 @@ public interface PostService extends IService<Post> {
      * 分页查询草稿文章
      */
     Page<Post> selectDrafts(Page<Post> page);
-
-    /**
-     * 获取文章归档列表（按年月分组）
-     */
-    List<Map<String, Object>> getPostArchives();
 
     /**
      * 获取文章归档列表（按年分组，每年内按月份分页）
@@ -123,11 +113,6 @@ public interface PostService extends IService<Post> {
      * 彻底删除文章（物理删除）
      */
     boolean permanentDelete(List<Long> idList);
-
-    /**
-     * AI 生成摘要
-     */
-    String generateSummary(String title, String content, int maxLength);
 
     /**
      * 获取已发布文章的总阅读量

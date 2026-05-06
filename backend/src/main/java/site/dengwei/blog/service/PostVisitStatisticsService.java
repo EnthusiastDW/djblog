@@ -3,8 +3,6 @@ package site.dengwei.blog.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import site.dengwei.blog.entity.PostVisitStatistics;
 
-import java.util.Map;
-
 /**
  * 文章访问统计服务接口
  *
@@ -14,7 +12,8 @@ import java.util.Map;
 public interface PostVisitStatisticsService extends IService<PostVisitStatistics> {
 
     /**
-     * 记录文章访问（使用设备指纹去重）- 同步方法
+     * 记录文章访问（使用设备指纹去重）
+     * 如果成功新增访问记录，则立即递增 post 表的浏览量
      *
      * @param postId    文章ID
      * @param visitorId 访客设备指纹ID
@@ -22,21 +21,8 @@ public interface PostVisitStatisticsService extends IService<PostVisitStatistics
     void recordPostVisit(Long postId, String visitorId);
 
     /**
-     * 记录文章访问（异步执行）
-     *
-     * @param postId    文章ID
-     * @param visitorId 访客设备指纹ID
-     */
-    void recordPostVisitAsync(Long postId, String visitorId);
-
-    /**
      * 同步浏览量到文章表
-     * 将统计的浏览量更新到 post 表的 view_count 字段
+     * 从 post_visit_statistics 表统计并更新到 post 表的 view_count 字段
      */
     void syncViewCountToPostTable();
-
-    /**
-     * 初始化缓存（从数据库加载所有文章的访问量）
-     */
-    void initCache();
 }

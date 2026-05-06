@@ -6,8 +6,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import site.dengwei.blog.dto.PostDetailDTO;
@@ -36,7 +34,7 @@ import java.util.Map;
 @RequestMapping("post")
 @RequiredArgsConstructor
 public class PostController {
-    
+
     private final PostService postService;
     private final AiSummaryService aiSummaryService;
     private final PostVisitStatisticsService postVisitStatisticsService;
@@ -98,25 +96,25 @@ public class PostController {
     public Response<Post> selectOne(@PathVariable Long id) {
         return Response.success(postService.getByIdOrThrow(id));
     }
-    
+
     /**
      * 根据 slug 查询文章详情(SEO 友好 URL)
      */
     @GetMapping("/slug/{slug}")
     public Response<PostDetailDTO> getBySlug(@PathVariable String slug, HttpServletRequest request) {
         PostDetailDTO post = postService.getPostBySlugOrThrow(slug);
-        
-        // 异步记录文章访问统计（不阻塞主流程）
+
+        // 记录文章访问统计
         try {
             String visitorId = request.getHeader("X-Visitor-ID");
             if (visitorId != null && !visitorId.isEmpty()) {
-                postVisitStatisticsService.recordPostVisitAsync(post.getId(), visitorId);
+                postVisitStatisticsService.recordPostVisit(post.getId(), visitorId);
             }
         } catch (Exception e) {
             // 忽略统计异常，不影响主流程
             log.debug("记录文章访问统计失败", e);
         }
-        
+
         return Response.success(post);
     }
 
@@ -217,8 +215,8 @@ public class PostController {
     @PostMapping("/summary/generate")
     public Response<String> generateSummary(@RequestBody SummaryRequest request) {
         String summary = aiSummaryService.generateSummary(
-                request.getTitle(), 
-                request.getContent(), 
+                request.getTitle(),
+                request.getContent(),
                 request.getMaxLength() != null ? request.getMaxLength() : 200
         );
         return Response.success(summary);
@@ -242,10 +240,8 @@ public class PostController {
      * 批量导入文章
      */
     @PostMapping("/import")
-    public Response<Map<String, Object>> importPosts(
-            @RequestParam("file") MultipartFile file,
-            @AuthenticationPrincipal UserDetails userDetails) throws IOException {
-        
+    public Response<Map<String, Object>> importPosts(@RequestParam("file") MultipartFile file) throws IOException {
+
         if (file.isEmpty()) {
             throw new IllegalArgumentException("上传文件不能为空");
         }
@@ -253,11 +249,12 @@ public class PostController {
         // 读取 JSON 文件内容
         byte[] bytes = file.getBytes();
         String jsonContent = new String(bytes, StandardCharsets.UTF_8);
-        
+
         // 解析 JSON
         com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
-        List<ImportPostRequest> posts = objectMapper.readValue(jsonContent, 
-            new com.fasterxml.jackson.core.type.TypeReference<List<ImportPostRequest>>() {});
+        List<ImportPostRequest> posts = objectMapper.readValue(jsonContent,
+                new com.fasterxml.jackson.core.type.TypeReference<>() {
+                });
 
         Long userId = 1L;
         Map<String, Object> result = postService.importPosts(posts, userId);

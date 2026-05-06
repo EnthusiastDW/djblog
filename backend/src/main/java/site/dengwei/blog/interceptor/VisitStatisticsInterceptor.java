@@ -12,6 +12,7 @@ import site.dengwei.blog.util.RequestContextUtil;
 /**
  * 全站访问统计拦截器
  * 用于统计整个网站的访问量（UV）
+ * 请注意，过滤器是在 web.xml 中进行配置的，而处理器拦截器则是在应用程序上下文中进行配置的。
  *
  * @author dengwei
  * @since 2026-04-03

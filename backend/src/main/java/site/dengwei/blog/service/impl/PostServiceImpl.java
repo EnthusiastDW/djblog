@@ -5,8 +5,12 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.springframework.beans.BeanUtils;
+import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -29,10 +33,7 @@ import site.dengwei.blog.service.PostTagService;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 文章服务实现类
@@ -40,6 +41,7 @@ import java.util.Map;
  * @author dengwei
  * @since 2025-09-08 11:56:27
  */
+@CacheConfig(cacheNames = "post")
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -53,6 +55,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     private final PostTagService postTagService;
     private final AiSummaryService aiSummaryService;
 
+    @Cacheable(key = "#id")
     @Override
     public Post getByIdOrThrow(Long id) {
         Post post = getById(id);
@@ -62,6 +65,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         return post;
     }
 
+    @Cacheable(key = "'detail:' + #id")
     @Override
     public PostDetailDTO getPostDetailOrThrow(Long id) {
         PostDetailDTO dto = getPostDetail(id);
@@ -71,6 +75,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         return dto;
     }
 
+    @Cacheable(key = "'slug:' + #slug")
     @Override
     public PostDetailDTO getPostBySlugOrThrow(String slug) {
         // 通过 slug 查询文章
@@ -126,20 +131,11 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     }
 
     @Override
-    public Page<Post> searchPosts(String keyword, Page<Post> page) {
-        return postMapper.searchPosts(keyword, page);
-    }
-
-    @Override
     public Page<PostListDTO> searchPostsAdvanced(String keyword, String title, String summary, Long categoryId, Long tagId, Long authorId, Page<Post> page, PostStatus status) {
         LambdaQueryWrapper<Post> wrapper = new LambdaQueryWrapper<>();
         
         // 默认只查询已发布的文章，除非明确指定其他状态
-        if (status != null) {
-            wrapper.eq(Post::getStatus, status);
-        } else {
-            wrapper.eq(Post::getStatus, PostStatus.PUBLISHED);
-        }
+        wrapper.eq(Post::getStatus, Objects.requireNonNullElse(status, PostStatus.PUBLISHED));
         
         if (StringUtils.hasText(keyword)) {
             String trimmedKeyword = keyword.trim();
@@ -180,13 +176,12 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         Page<Post> postPage = page(page, wrapper);
         
         // 转换为 DTO 并填充分类、标签和匹配内容
-        String searchKeyword = keyword;
         List<PostListDTO> dtoList = postPage.getRecords().stream()
                 .map(post -> {
                     PostListDTO dto = convertToDTO(post);
                     // 如果有关键词，提取匹配内容片段
-                    if (StringUtils.hasText(searchKeyword)) {
-                        dto.setMatchedContent(extractMatchedContent(post, searchKeyword.trim()));
+                    if (StringUtils.hasText(keyword)) {
+                        dto.setMatchedContent(extractMatchedContent(post, keyword.trim()));
                     }
                     return dto;
                 })
@@ -217,8 +212,10 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         wrapper.in(Post::getCategoryId, categoryIds);
         wrapper.orderByDesc(Post::getCreatedAt);
 
-        Page<Post> postPage = page(page, wrapper);
+        return toPostDtoPage(page(page, wrapper));
+    }
 
+    private @NonNull Page<PostListDTO> toPostDtoPage(Page<Post> postPage) {
         List<PostListDTO> dtoList = postPage.getRecords().stream()
                 .map(this::convertToDTO)
                 .toList();
@@ -241,29 +238,13 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         }
         
         if (queryParam != null) {
-            if (queryParam.getStatus() != null) {
-                wrapper.eq(Post::getStatus, queryParam.getStatus());
-            }
-            if (queryParam.getCategoryId() != null) {
-                wrapper.eq(Post::getCategoryId, queryParam.getCategoryId());
-            }
-            if (StringUtils.hasText(queryParam.getTitle())) {
-                wrapper.like(Post::getTitle, queryParam.getTitle());
-            }
+            wrapper.eq(queryParam.getStatus() != null, Post::getStatus, queryParam.getStatus());
+            wrapper.eq(queryParam.getCategoryId() != null, Post::getCategoryId, queryParam.getCategoryId());
+            wrapper.like(StringUtils.hasText(queryParam.getTitle()), Post::getTitle, queryParam.getTitle());
         }
         wrapper.orderByDesc(Post::getCreatedAt);
-        
-        Page<Post> postPage = page(page, wrapper);
-        
-        // 转换为 DTO 并填充分类和标签信息
-        List<PostListDTO> dtoList = postPage.getRecords().stream()
-                .map(this::convertToDTO)
-                .toList();
-        
-        Page<PostListDTO> dtoPage = new Page<>(postPage.getCurrent(), postPage.getSize(), postPage.getTotal());
-        dtoPage.setRecords(dtoList);
-        
-        return dtoPage;
+
+        return toPostDtoPage(page(page, wrapper));
     }
     
     /**
@@ -304,11 +285,6 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     }
 
     @Override
-    public List<Map<String, Object>> getPostArchives() {
-        return postMapper.selectPostArchives();
-    }
-
-    @Override
     public List<Map<String, Object>> getPostArchivesByYear(Integer size) {
         List<Map<String, Object>> allArchives = postMapper.selectPostArchives();
         
@@ -335,17 +311,13 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
 
     @Override
     public Page<PostListDTO> getPostsByArchive(String yearMonth, Page<Post> page) {
-        Page<Post> postPage = postMapper.selectPostsByArchive(yearMonth, page);
-        
-        List<PostListDTO> dtoList = postPage.getRecords().stream()
-                .map(this::convertToDTO)
-                .toList();
-        
-        Page<PostListDTO> dtoPage = new Page<>(postPage.getCurrent(), postPage.getSize(), postPage.getTotal());
-        dtoPage.setRecords(dtoList);
-        return dtoPage;
+        return toPostDtoPage(postMapper.selectPostsByArchive(yearMonth, page));
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "categories", allEntries = true),
+            @CacheEvict(value = "post", allEntries = true)
+    })
     @Override
     public boolean saveDraft(SaveDraftRequest request) {
         Post post = buildPostFromDraftOrPublishRequest(request, PostStatus.DRAFT);
@@ -357,8 +329,11 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         return result;
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "categories", allEntries = true),
+            @CacheEvict(value = "post", allEntries = true)
+    })
     @Override
-    @CacheEvict(value = "categories", allEntries = true)
     public boolean publish(PublishRequest request) {
         Post post = buildPostFromDraftOrPublishRequest(request, PostStatus.PUBLISHED);
         post.setPublishedAt(LocalDateTime.now());
@@ -370,8 +345,11 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         return result;
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "categories", allEntries = true),
+            @CacheEvict(value = "post", allEntries = true)
+    })
     @Override
-    @CacheEvict(value = "categories", allEntries = true)
     public boolean createPost(CreatePostRequest request) {
         Post post = buildPostFromCreateRequest(request);
         log.info("创建文章，标题: {}", request.getTitle());
@@ -382,8 +360,11 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         return result;
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "categories", allEntries = true),
+            @CacheEvict(value = "post", allEntries = true)
+    })
     @Override
-    @CacheEvict(value = "categories", allEntries = true)
     public boolean updatePost(UpdatePostRequest request) {
         Post post = getByIdOrThrow(request.getId());
         updatePostFromRequest(post, request);
@@ -395,8 +376,12 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         return result;
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "categories", allEntries = true),
+            @CacheEvict(value = "post", allEntries = true)
+    })
+    @Transactional(rollbackFor = Exception.class)
     @Override
-    @CacheEvict(value = "categories", allEntries = true)
     public boolean deletePosts(List<Long> idList) {
         if (idList == null || idList.isEmpty()) {
             throw new BusinessException("请选择要删除的文章");
@@ -409,8 +394,12 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         return updateBatchById(posts);
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "categories", allEntries = true),
+            @CacheEvict(value = "post", allEntries = true)
+    })
+    @Transactional(rollbackFor = Exception.class)
     @Override
-    @CacheEvict(value = "categories", allEntries = true)
     public boolean restorePosts(List<Long> idList) {
         if (idList == null || idList.isEmpty()) {
             throw new BusinessException("请选择要恢复的文章");
@@ -431,26 +420,18 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         wrapper.eq(Post::getStatus, PostStatus.DELETED);
         
         if (queryParam != null) {
-            if (StringUtils.hasText(queryParam.getTitle())) {
-                wrapper.like(Post::getTitle, queryParam.getTitle());
-            }
+            wrapper.like(StringUtils.hasText(queryParam.getTitle()), Post::getTitle, queryParam.getTitle());
         }
         wrapper.orderByDesc(Post::getUpdatedAt);
-        
-        Page<Post> postPage = page(page, wrapper);
-        
-        List<PostListDTO> dtoList = postPage.getRecords().stream()
-                .map(this::convertToDTO)
-                .toList();
-        
-        Page<PostListDTO> dtoPage = new Page<>(postPage.getCurrent(), postPage.getSize(), postPage.getTotal());
-        dtoPage.setRecords(dtoList);
-        
-        return dtoPage;
+
+        return toPostDtoPage(page(page, wrapper));
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "categories", allEntries = true),
+            @CacheEvict(value = "post", allEntries = true)
+    })
     @Override
-    @CacheEvict(value = "categories", allEntries = true)
     public boolean permanentDelete(List<Long> idList) {
         if (idList == null || idList.isEmpty()) {
             throw new BusinessException("请选择要彻底删除的文章");
@@ -556,12 +537,6 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     }
 
     @Override
-    public String generateSummary(String title, String content, int maxLength) {
-        log.info("AI 生成摘要，标题：{}", title);
-        return aiSummaryService.generateSummary(title, content, maxLength);
-    }
-
-    @Override
     public Long getTotalViewCount() {
         // 直接从数据库查询总浏览量（已定期同步到 post 表）
         return postMapper.selectTotalViewCount();
@@ -573,6 +548,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         return postMapper.selectPopularPosts(limit);
     }
 
+    @CacheEvict(allEntries = true)
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Map<String, Object> importPosts(List<ImportPostRequest> posts, Long userId) {
