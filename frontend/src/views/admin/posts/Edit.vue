@@ -354,7 +354,12 @@ async function handleSaveDraft() {
 
   saving.value = true
   try {
-    await postApi.saveDraft(form)
+    const res = await postApi.saveDraft(form)
+    // 如果是新建文章，后端返回文章ID，需要更新到表单中
+    if (res.data && !form.id) {
+      form.id = res.data
+      console.log('[Save Draft] New draft created with ID:', form.id)
+    }
     lastSaveTime.value = new Date()
     ElMessage.success('草稿已保存')
     // 不跳转页面，保持在编辑页
@@ -372,7 +377,12 @@ async function autoSaveDraft() {
   if (!form.title && !form.content) return
   
   try {
-    await postApi.saveDraft(form)
+    const res = await postApi.saveDraft(form)
+    // 如果是新建文章，后端返回文章ID，需要更新到表单中
+    if (res.data && !form.id) {
+      form.id = res.data
+      console.log('[Auto Save] New draft created with ID:', form.id)
+    }
     lastSaveTime.value = new Date()
     console.log('[Auto Save] Draft saved at', lastSaveTime.value)
   } catch (e) {
@@ -426,7 +436,12 @@ async function handlePublish() {
   publishing.value = true
   try {
     // 无论新建还是编辑，都使用 publish 方法确保状态为已发布
-    await postApi.publish(form)
+    const res = await postApi.publish(form)
+    // 如果是新建文章，后端返回文章ID，需要更新到表单中
+    if (res.data && !form.id) {
+      form.id = res.data
+      console.log('[Publish] New article published with ID:', form.id)
+    }
     ElMessage.success('发布成功')
     router.push('/admin/posts')
   } catch (e) {

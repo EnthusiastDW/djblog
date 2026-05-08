@@ -319,14 +319,14 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
             @CacheEvict(value = "post", allEntries = true)
     })
     @Override
-    public boolean saveDraft(SaveDraftRequest request) {
+    public Long saveDraft(SaveDraftRequest request) {
         Post post = buildPostFromDraftOrPublishRequest(request, PostStatus.DRAFT);
         log.info("保存草稿，标题: {}", request.getTitle());
         boolean result = saveOrUpdate(post);
         if (result && request.getTagIds() != null && request.getTagIds().length > 0) {
             postTagService.setPostTags(post.getId(), java.util.Arrays.asList(request.getTagIds()));
         }
-        return result;
+        return result ? post.getId() : null;
     }
 
     @Caching(evict = {
@@ -334,7 +334,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
             @CacheEvict(value = "post", allEntries = true)
     })
     @Override
-    public boolean publish(PublishRequest request) {
+    public Long publish(PublishRequest request) {
         Post post = buildPostFromDraftOrPublishRequest(request, PostStatus.PUBLISHED);
         post.setPublishedAt(LocalDateTime.now());
         log.info("发布文章，标题: {}", request.getTitle());
@@ -342,7 +342,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         if (result && request.getTagIds() != null && request.getTagIds().length > 0) {
             postTagService.setPostTags(post.getId(), java.util.Arrays.asList(request.getTagIds()));
         }
-        return result;
+        return result ? post.getId() : null;
     }
 
     @Caching(evict = {

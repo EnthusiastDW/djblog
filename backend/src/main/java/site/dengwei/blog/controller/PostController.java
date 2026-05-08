@@ -149,7 +149,7 @@ public class PostController {
      * 保存草稿
      */
     @PostMapping("/draft")
-    public Response<Boolean> saveDraft(@Valid @RequestBody SaveDraftRequest request) {
+    public Response<Long> saveDraft(@Valid @RequestBody SaveDraftRequest request) {
         return Response.success(postService.saveDraft(request));
     }
 
@@ -157,7 +157,7 @@ public class PostController {
      * 发布文章
      */
     @PostMapping("/publish")
-    public Response<Boolean> publish(@Valid @RequestBody PublishRequest request) {
+    public Response<Long> publish(@Valid @RequestBody PublishRequest request) {
         return Response.success(postService.publish(request));
     }
 

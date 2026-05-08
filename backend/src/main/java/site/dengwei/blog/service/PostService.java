@@ -76,13 +76,15 @@ public interface PostService extends IService<Post> {
 
     /**
      * 保存草稿
+     * @return 文章ID
      */
-    boolean saveDraft(SaveDraftRequest request);
+    Long saveDraft(SaveDraftRequest request);
 
     /**
      * 发布文章
+     * @return 文章ID
      */
-    boolean publish(PublishRequest request);
+    Long publish(PublishRequest request);
 
     /**
      * 创建文章
