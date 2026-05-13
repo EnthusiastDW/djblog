@@ -21,7 +21,7 @@ import java.util.List;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@TableName(value = "comment", schema = "blog")
+@TableName(value = "comment")
 public class Comment extends Model<Comment> implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;

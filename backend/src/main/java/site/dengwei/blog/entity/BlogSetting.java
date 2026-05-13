@@ -11,7 +11,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
-@TableName(value = "blog_setting", schema = "blog")
+@TableName(value = "blog_setting")
 public class BlogSetting extends Model<BlogSetting> {
     @Serial
     private static final long serialVersionUID = 1L;

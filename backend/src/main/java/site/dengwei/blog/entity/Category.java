@@ -22,7 +22,7 @@ import jakarta.validation.constraints.Size;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@TableName(value = "category", schema = "blog")
+@TableName(value = "category")
 public class Category extends Model<Category> implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;

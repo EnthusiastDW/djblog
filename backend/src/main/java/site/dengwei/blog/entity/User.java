@@ -23,7 +23,7 @@ import java.util.Collections;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName(value = "db_user", schema = "blog")
+@TableName(value = "db_user")
 public class User extends Model<User> implements Serializable, UserDetails {
     @Serial
     private static final long serialVersionUID = 1L;

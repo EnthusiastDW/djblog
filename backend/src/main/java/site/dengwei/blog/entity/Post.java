@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@TableName(value = "post", schema = "blog")
+@TableName(value = "post")
 public class Post extends Model<Post> implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;

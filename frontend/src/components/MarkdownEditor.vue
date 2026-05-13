@@ -40,7 +40,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
 import MarkdownIt from 'markdown-it'
 import anchor from 'markdown-it-anchor'
-import { createHighlightWithWrapper } from '@/utils/highlight'
+import { createHighlightWithWrapper, setupInlineCodeCopy } from '@/utils/highlight'
 
 const props = defineProps({
   modelValue: {
@@ -84,6 +84,9 @@ const md = new MarkdownIt({
   slugify: (str) => str.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^\w\u4e00-\u9fa5-]/g, ''),
   permalink: false
 })
+
+// 配置行内代码复制按钮
+setupInlineCodeCopy(md)
 
 // 渲染Markdown内容
 const renderedContent = computed(() => {

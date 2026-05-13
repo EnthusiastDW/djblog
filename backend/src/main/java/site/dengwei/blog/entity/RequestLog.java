@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@TableName(value = "request_log", schema = "blog")
+@TableName(value = "request_log")
 public class RequestLog extends Model<RequestLog> implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;

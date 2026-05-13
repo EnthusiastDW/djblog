@@ -144,7 +144,7 @@ import { tagApi } from '@/api/tag'
 import { ArrowLeft, MagicStick, Setting, Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import MarkdownIt from 'markdown-it'
-import { createHighlightWithWrapper } from '@/utils/highlight'
+import { createHighlightWithWrapper, setupInlineCodeCopy } from '@/utils/highlight'
 import CategoryCreateDialog from '@/components/CategoryCreateDialog.vue'
 
 const route = useRoute()
@@ -205,6 +205,9 @@ function loadHighlightTheme(theme) {
 const md = new MarkdownIt({
   highlight: createHighlightWithWrapper()
 })
+
+// 配置行内代码复制按钮
+setupInlineCodeCopy(md)
 
 const renderedContent = computed(() => {
   if (!form.content) return ''
