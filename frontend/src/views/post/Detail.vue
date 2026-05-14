@@ -315,9 +315,9 @@ async function fetchPostDetail() {
       post.value = res.data
     }
     
-    // 设置页面标题为文章标题
+    // 设置页面标题为文章标题 - 去掉 DJ Blog 后缀
     if (post.value?.title) {
-      document.title = `${post.value.title} - DJ Blog`
+      document.title = post.value.title
     }
     
     if (post.value?.id) {

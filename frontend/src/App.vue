@@ -21,7 +21,7 @@ function updateTitle() {
   if (blogUser.value) {
     document.title = `${blogUser.value.username}的博客`
   } else {
-    document.title = 'DJ Blog'
+    document.title = '首页'
   }
 }
 

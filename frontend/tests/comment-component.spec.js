@@ -17,7 +17,7 @@ test.describe('多级评论组件测试', () => {
     await page.waitForTimeout(1000)
     
     // 验证页面正常加载
-    await expect(page).toHaveTitle(/DJ Blog/)
+    await expect(page).toHaveTitle(/首页/)
     
     // 验证首页元素存在
     const header = page.locator('header')
@@ -77,7 +77,7 @@ test.describe('多级评论组件测试', () => {
     
     // 验证登录状态显示
     // 注意：实际测试需要真实的文章和评论数据
-    await expect(page).toHaveTitle(/DJ Blog/)
+    await expect(page).toHaveTitle(/首页/)
   })
 
   test('匿名用户回复对话框', async ({ page }) => {
@@ -86,7 +86,7 @@ test.describe('多级评论组件测试', () => {
     await page.waitForTimeout(1000)
     
     // 验证页面正常
-    await expect(page).toHaveTitle(/DJ Blog/)
+    await expect(page).toHaveTitle(/首页/)
     
     // 实际的多级评论测试需要：
     // 1. 创建一篇文章

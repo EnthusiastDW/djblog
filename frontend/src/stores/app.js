@@ -10,7 +10,7 @@ export const useAppStore = defineStore('app', () => {
   const sidebarCollapsed = ref(false)
   const leftSidebarVisible = ref(false)
   const bgImage = ref(localStorage.getItem('bgImage') || '')
-  const bgOpacity = ref(parseFloat(localStorage.getItem('bgOpacity')) || 0.3)
+  const bgOpacity = ref(parseFloat(localStorage.getItem('bgOpacity')) || 0.2)
   const todayVisitors = ref(0)
   const totalVisitors = ref(0)
 
@@ -55,7 +55,7 @@ export const useAppStore = defineStore('app', () => {
         if (res.data.bgImage) {
           bgImage.value = res.data.bgImage
         }
-        if (res.data.bgOpacity) {
+        if (res.data.bgOpacity !== undefined && res.data.bgOpacity !== null) {
           bgOpacity.value = parseFloat(res.data.bgOpacity)
         }
       }

@@ -235,6 +235,9 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         LambdaQueryWrapper<Post> wrapper = new LambdaQueryWrapper<>();
         if (filterPublished) {
             wrapper.eq(Post::getStatus, PostStatus.PUBLISHED);
+        } else {
+            // 管理后台不显示已删除的文章
+            wrapper.ne(Post::getStatus, PostStatus.DELETED);
         }
         
         if (queryParam != null) {

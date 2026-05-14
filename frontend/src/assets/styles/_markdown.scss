@@ -4,7 +4,7 @@
   color: var(--el-text-color-primary);
 
   h1, h2, h3, h4, h5, h6 {
-    margin: 32px 0 16px;
+    margin: 16px 0 16px;
     font-weight: 600;
     line-height: 1.4;
   }
@@ -17,7 +17,7 @@
   h6 { font-size: 15px; }
 
   p {
-    margin-bottom: 20px;
+    margin-bottom: 5px;
     line-height: 1.9;
   }
 
@@ -26,12 +26,16 @@
     border-radius: 6px;
     overflow: hidden;
     border: 1px solid var(--el-border-color);
+    width: 100%;
+    box-sizing: border-box;
     
     pre {
       margin: 0;
       padding: 16px;
       overflow-x: auto;
       line-height: 1.6;
+      width: 100%;
+      box-sizing: border-box;
       
       code {
         font-size: 14px;
@@ -40,6 +44,7 @@
         background: transparent;
         padding: 0;
         display: block;
+        width: 100%;
       }
     }
   }
@@ -79,13 +84,11 @@
     border-radius: 4px;
     font-size: 14px;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    padding: 2px 6px;
     position: relative;
-    display: inline-block;
-    
+
     // 行内代码容器
     &.inline-code-wrapper {
-      padding-right: 32px; // 为复制按钮留出空间
+      padding: 3px 24px 3px 3px;
       cursor: pointer;
       transition: all 0.2s;
       

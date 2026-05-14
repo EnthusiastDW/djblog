@@ -181,8 +181,8 @@ const router = createRouter({
 
 // 路由守卫
 router.beforeEach((to, from, next) => {
-  // 设置页面标题
-  document.title = to.meta.title ? `${to.meta.title} - DJ Blog` : 'DJ Blog'
+  // 设置页面标题 - 去掉 DJ Blog 后缀，只显示页面标题
+  document.title = to.meta.title || '首页'
 
   // 检查是否需要登录
   if (to.meta.requiresAuth) {

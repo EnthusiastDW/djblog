@@ -5,7 +5,7 @@ test.describe('首页测试', () => {
     await page.goto('/')
     
     // 检查页面标题
-    await expect(page).toHaveTitle(/DJ Blog/)
+    await expect(page).toHaveTitle(/首页/)
     
     // 检查导航栏存在
     await expect(page.locator('.app-header')).toBeVisible()

@@ -48,7 +48,7 @@ async function fetchSettings() {
     const res = await api.get('/setting')
     if (res.data) {
       bgImage.value = res.data.bgImage || ''
-      bgOpacity.value = parseFloat(res.data.bgOpacity) || 0.3
+      bgOpacity.value = res.data.bgOpacity !== undefined && res.data.bgOpacity !== null ? parseFloat(res.data.bgOpacity) : 0.3
     }
   } catch (e) {
     console.error('获取设置失败', e)

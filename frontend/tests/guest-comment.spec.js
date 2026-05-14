@@ -48,7 +48,7 @@ test.describe('游客评论功能测试', () => {
     await page.waitForTimeout(1000)
     
     // 验证页面标题
-    await expect(page).toHaveTitle(/DJ Blog/)
+    await expect(page).toHaveTitle(/首页/)
     
     // 验证头部存在
     const header = page.locator('header')

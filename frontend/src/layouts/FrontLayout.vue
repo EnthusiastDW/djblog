@@ -80,6 +80,11 @@ const bgStyle = computed(() => {
   return baseStyle
 })
 
+// 动态设置 CSS 变量
+watch(() => appStore.bgOpacity, (newOpacity) => {
+  document.documentElement.style.setProperty('--component-opacity', newOpacity.toString())
+}, { immediate: true })
+
 onMounted(() => {
   appStore.fetchSettings()
 })
@@ -124,10 +129,9 @@ onMounted(() => {
   left: 0;
   right: 0;
   height: 60px;
-  background: rgba(255, 255, 255, 0.8);
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  background: rgba(255, 255, 255, var(--component-opacity, 0.8));
   z-index: 100;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(calc(var(--component-opacity, 0.8) * 12.5px));
 }
 
 .front-main-container {
@@ -137,10 +141,9 @@ onMounted(() => {
 }
 
 .left-sidebar {
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, var(--component-opacity, 0.8));
   padding: 16px;
-  border-right: 1px solid var(--el-border-color-lighter);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(calc(var(--component-opacity, 0.8) * 12.5px));
   width: 280px;
   transition: transform 0.3s ease;
 }
@@ -151,16 +154,15 @@ onMounted(() => {
 
 .front-main {
   padding: 24px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, var(--component-opacity, 0.8));
+  backdrop-filter: blur(calc(var(--component-opacity, 0.8) * 12.5px));
   flex: 1;
 }
 
 .front-aside {
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, var(--component-opacity, 0.8));
   padding: 16px;
-  border-left: 1px solid var(--el-border-color-lighter);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(calc(var(--component-opacity, 0.8) * 12.5px));
   width: 300px;
   transition: transform 0.3s ease;
 }
@@ -204,9 +206,8 @@ onMounted(() => {
   width: 100%;
   height: auto;
   padding: 0;
-  background: rgba(255, 255, 255, 0.8);
-  border-top: 1px solid var(--el-border-color-lighter);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, var(--component-opacity, 0.8));
+  backdrop-filter: blur(calc(var(--component-opacity, 0.8) * 12.5px));
 }
 
 // 暗色主题支持
@@ -215,23 +216,23 @@ onMounted(() => {
 }
 
 .dark .front-header {
-  background: rgba(20, 20, 20, 0.8) !important;
+  background: rgba(20, 20, 20, var(--component-opacity, 0.8)) !important;
 }
 
 .dark .front-main {
-  background: rgba(20, 20, 20, 0.8) !important;
+  background: rgba(20, 20, 20, var(--component-opacity, 0.8)) !important;
 }
 
 .dark .front-aside {
-  background: rgba(20, 20, 20, 0.8) !important;
+  background: rgba(20, 20, 20, var(--component-opacity, 0.8)) !important;
 }
 
 .dark .left-sidebar {
-  background: rgba(20, 20, 20, 0.8) !important;
+  background: rgba(20, 20, 20, var(--component-opacity, 0.8)) !important;
 }
 
 .dark .front-footer {
-  background: rgba(20, 20, 20, 0.8) !important;
+  background: rgba(20, 20, 20, var(--component-opacity, 0.8)) !important;
 }
 
 .dark .sidebar-overlay {
