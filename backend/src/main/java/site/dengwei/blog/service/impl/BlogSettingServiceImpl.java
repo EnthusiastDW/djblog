@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import site.dengwei.blog.entity.BlogSetting;
 import site.dengwei.blog.mapper.BlogSettingMapper;
@@ -14,11 +16,13 @@ import site.dengwei.blog.service.BlogSettingService;
 @RequiredArgsConstructor
 public class BlogSettingServiceImpl extends ServiceImpl<BlogSettingMapper, BlogSetting> implements BlogSettingService {
 
+    @Cacheable(cacheNames = "settings", key = "#key")
     @Override
     public String getValue(String key) {
         return baseMapper.getValueByKey(key);
     }
 
+    @CacheEvict(cacheNames = "settings", key = "#key")
     @Override
     public void setValue(String key, String value) {
         BlogSetting setting = getOne(new LambdaQueryWrapper<BlogSetting>().eq(BlogSetting::getSettingKey, key));

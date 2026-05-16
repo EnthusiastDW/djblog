@@ -6,6 +6,8 @@ import site.dengwei.blog.dto.RegisterRequest;
 import site.dengwei.blog.dto.request.*;
 import site.dengwei.blog.entity.User;
 
+import java.util.Optional;
+
 /**
  * 用户服务接口
  *
@@ -52,9 +54,16 @@ public interface UserService extends IService<User> {
     /**
      * 根据用户名查询用户
      * @param username 用户名
-     * @return 用户实体
+     * @return 用户实体（Optional）
      */
-    User findByUsername(String username);
+    Optional<User> findByUsername(String username);
+
+    /**
+     * 根据ID查询用户
+     * @param id 用户ID
+     * @return 用户实体（Optional）
+     */
+    Optional<User> findById(Long id);
 
     /**
      * 获取公开用户资料（脱敏）

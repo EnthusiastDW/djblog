@@ -18,6 +18,8 @@ import site.dengwei.blog.exception.BusinessException;
 import site.dengwei.blog.mapper.CommentMapper;
 import site.dengwei.blog.service.CommentAiAuditService;
 import site.dengwei.blog.service.CommentService;
+
+import java.util.Optional;
 import site.dengwei.blog.service.UserService;
 
 import java.util.ArrayList;
@@ -105,8 +107,9 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         // 如果是登录用户，自动填充用户信息
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         if (!"anonymousUser".equals(username)) {
-            User user = userService.findByUsername(username);
-            if (user != null) {
+            Optional<User> userOpt = userService.findByUsername(username);
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
                 request.setUserId(user.getId());
                 // 如果前端没有传入作者名称，使用用户的用户名
                 if (request.getAuthorName() == null || request.getAuthorName().isEmpty()) {

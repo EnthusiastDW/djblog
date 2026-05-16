@@ -4,16 +4,26 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.aop.framework.AopContext;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import site.dengwei.blog.dto.AuthResponse;
 import site.dengwei.blog.dto.RegisterRequest;
-import site.dengwei.blog.dto.request.*;
+import site.dengwei.blog.dto.request.CreateUserRequest;
+import site.dengwei.blog.dto.request.DeleteRequest;
+import site.dengwei.blog.dto.request.UpdateAboutRequest;
+import site.dengwei.blog.dto.request.UpdateUserRequest;
 import site.dengwei.blog.entity.User;
 import site.dengwei.blog.exception.BusinessException;
 import site.dengwei.blog.mapper.UserMapper;
 import site.dengwei.blog.service.UserService;
 import site.dengwei.blog.util.JwtUtil;
+
+import java.util.Optional;
 
 /**
  * 用户服务实现类
@@ -24,21 +34,26 @@ import site.dengwei.blog.util.JwtUtil;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@CacheConfig(cacheNames = "user")
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
     @Override
-    public User getByIdOrThrow(Long id) {
-        User user = getById(id);
-        if (user == null) {
-            throw new BusinessException("用户不存在");
-        }
-        return user;
+    @Cacheable(key = "#id")
+    public Optional<User> findById(Long id) {
+        return Optional.ofNullable(getById(id));
     }
 
     @Override
+    public User getByIdOrThrow(Long id) {
+        UserService self = (UserService) AopContext.currentProxy();
+        return self.findById(id).orElseThrow(() -> new BusinessException("用户不存在"));
+    }
+
+    @Override
+    @CacheEvict(cacheNames = "user", allEntries = true)
     public User registerUser(RegisterRequest request) {
         log.info("正在注册新用户: {}", request.getUsername());
 
@@ -73,6 +88,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
+    @CacheEvict(cacheNames = "user", allEntries = true)
     public boolean createUser(CreateUserRequest request) {
         log.info("创建用户: {}", request.getUsername());
         User user = new User();
@@ -84,13 +100,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
+    @Caching(
+        evict = {
+            @CacheEvict(key = "#request.id"),
+            @CacheEvict(cacheNames = "user", key = "#result.user.username", condition = "#result.user != null and #result.user.username != null")
+        }
+    )
     public AuthResponse updateUser(UpdateUserRequest request) {
         log.info("更新用户，ID: {}", request.getId());
         User user = getByIdOrThrow(request.getId());
-        
+
         // 记录旧用户名，用于判断是否修改了用户名
         String oldUsername = user.getUsername();
-        
+
         if (request.getUsername() != null) {
             // 检查用户名是否已被其他用户使用
             User existingUser = getOne(
@@ -122,40 +144,41 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (request.getRole() != null) {
             user.setRole(request.getRole());
         }
-        
+
         boolean success = updateById(user);
-        
+
         // 构建响应
         AuthResponse response = new AuthResponse();
         response.setUser(user);
-        
+
         // 如果用户名被修改，生成新的 token
         if (success && request.getUsername() != null && !request.getUsername().equals(oldUsername)) {
             String newToken = jwtUtil.generateToken(user.getUsername());
             response.setToken(newToken);
             log.info("用户名已修改，生成新 token: {} -> {}", oldUsername, user.getUsername());
         }
-        
+
         return response;
     }
 
     @Override
+    @CacheEvict(cacheNames = "user", allEntries = true)
     public boolean deleteUsers(DeleteRequest request) {
         log.info("删除用户，ID 列表：{}", request.getIdList());
         return removeByIds(request.getIdList());
     }
 
     @Override
-    public User findByUsername(String username) {
-        return getOne(new LambdaQueryWrapper<User>().eq(User::getUsername, username));
+    @Cacheable(cacheNames = "user", key = "#username")
+    public Optional<User> findByUsername(String username) {
+        return Optional.ofNullable(getOne(new LambdaQueryWrapper<User>().eq(User::getUsername, username)));
     }
 
     @Override
+    @Cacheable(cacheNames = "user", key = "'public:' + #id")
     public User getPublicUser(Long id) {
-        User user = getById(id);
-        if (user == null) {
-            throw new BusinessException("用户不存在");
-        }
+        UserService self = (UserService) AopContext.currentProxy();
+        User user = self.findById(id).orElseThrow(() -> new BusinessException("用户不存在"));
         User publicUser = new User();
         publicUser.setId(user.getId());
         publicUser.setUsername(user.getUsername());
@@ -167,6 +190,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
+    @Cacheable(cacheNames = "user", key = "'about:content'", unless = "#result == null")
     public String getAboutContent() {
         // 获取第一个用户（博主）的about_content
         User user = getOne(new LambdaQueryWrapper<User>().orderByAsc(User::getId).last("LIMIT 1"));
@@ -177,6 +201,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
+    @CacheEvict(cacheNames = "user", key = "'about:content'")
     public boolean updateAboutContent(UpdateAboutRequest request) {
         log.info("更新关于我内容");
         // 获取第一个用户（博主）

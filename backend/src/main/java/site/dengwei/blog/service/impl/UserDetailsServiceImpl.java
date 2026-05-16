@@ -3,6 +3,7 @@ package site.dengwei.blog.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -31,9 +32,10 @@ public class UserDetailsServiceImpl implements UserDetailsService {
      * @return 用户详情
      * @throws UsernameNotFoundException 当用户不存在时抛出此异常
      */
+    @Cacheable(value = "user", key = "#username")
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        log.info("加载用户详情，用户名: {}", username);
+        log.debug("加载用户详情，用户名: {}", username);
 
         User user = userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getUsername, username));
         if (user == null) {
