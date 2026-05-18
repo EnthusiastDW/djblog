@@ -11,14 +11,13 @@ spring:
   # Spring AI 配置
   ai:
     openai:
-      api-key: ${AI_DASHSCOPE_API_KEY:sk-111eec65fa474f01ae94cb8bdf9f3c04}
-      base-url: https://api.deepseek.com
+      api-key: ${AI_DASHSCOPE_API_KEY:sk-盗api-key的去死吧}
+      base-url: https://api.siliconflow.cn/v1
       chat:
         completions-path: /chat/completions
         options:
-          model: deepseek-v4-flash
+          model: Qwen/Qwen3-8B #模型随时可能过期
           temperature: 0.3
-
 
 # JWT 默认配置（可被环境配置覆盖）
 jwt:
