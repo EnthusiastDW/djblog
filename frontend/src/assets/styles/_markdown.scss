@@ -199,6 +199,12 @@
     max-width: 100%;
     border-radius: 8px;
     margin: 16px 0;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+
+    &:hover {
+      opacity: 0.9;
+    }
   }
 
   a {

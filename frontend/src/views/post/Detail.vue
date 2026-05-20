@@ -47,7 +47,7 @@
             </div>
           </div>
 
-          <div class="article-content" v-html="renderedContent"></div>
+          <div class="article-content" v-html="renderedContent" @click="handleArticleClick"></div>
         </article>
 
         <!-- 目录侧边栏 - 使用渲染后的HTML内容以便正确解析标题 -->
@@ -189,6 +189,17 @@
       </section>
     </template>
     <BackToTop />
+
+    <!-- 图片全屏查看 -->
+    <el-image-viewer
+      v-if="imageViewerVisible"
+      :url-list="imageUrlList"
+      :initial-index="currentImageIndex"
+      :hide-on-click-modal="true"
+      :z-index="9999"
+      :teleported="true"
+      @close="imageViewerVisible = false"
+    />
   </div>
 </template>
 
@@ -206,7 +217,7 @@ import MarkdownIt from 'markdown-it'
 import anchor from 'markdown-it-anchor'
 import { createHighlightWithWrapper, setupInlineCodeCopy } from '@/utils/highlight'
 import { setCookie, getCookie } from '@/utils/cookie'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElImageViewer } from 'element-plus'
 import CommentReply from '@/components/CommentReply.vue'
 import TocSidebar from '@/components/TocSidebar.vue'
 import BackToTop from '@/components/BackToTop.vue'
@@ -228,6 +239,28 @@ const replyFormRef = ref(null)
 const showCommentDialog = ref(false)
 const showReplyDialog = ref(false)
 const currentReplyComment = ref(null)
+
+// 图片全屏查看
+const imageViewerVisible = ref(false)
+const imageUrlList = ref([])
+const currentImageIndex = ref(0)
+
+// 点击文章内容中的图片，打开全屏查看
+function handleArticleClick(e) {
+  const target = e.target
+  if (target.tagName === 'IMG') {
+    const contentDiv = target.closest('.article-content')
+    if (contentDiv) {
+      const allImages = contentDiv.querySelectorAll('img')
+      const urls = Array.from(allImages).map(img => img.src)
+      const index = urls.indexOf(target.src)
+      
+      imageUrlList.value = urls
+      currentImageIndex.value = index >= 0 ? index : 0
+      imageViewerVisible.value = true
+    }
+  }
+}
 
 // 动态主题映射
 const themeMap = {
