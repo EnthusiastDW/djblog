@@ -1,8 +1,10 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { userApi } from '@/api/user'
+import { useAppStore } from '@/stores/app'
 
 const blogUser = ref(null)
+const appStore = useAppStore()
 
 // 获取博主信息
 async function fetchBlogUser() {

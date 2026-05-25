@@ -56,10 +56,13 @@
             </div>
           </div>
         </div>
-        <el-icon class="theme-btn" @click="toggleTheme">
-            <Sunny v-if="appStore.theme === 'dark'" />
-            <Moon v-else />
-        </el-icon>
+        <el-tooltip :content="themeTooltip" placement="bottom">
+          <el-icon class="theme-btn" @click="handleToggleTheme">
+            <Sunny v-if="appStore.themeMode === 'light'" />
+            <Moon v-if="appStore.themeMode === 'dark'" />
+            <Monitor v-if="appStore.themeMode === 'system'" />
+          </el-icon>
+        </el-tooltip>
         <nav class="nav-menu">
           <router-link to="/archives" class="nav-item" :class="{ active: route.path.startsWith('/archives') }">
             归档
@@ -107,7 +110,7 @@ import { useUserStore } from '@/stores/user'
 import { useAppStore } from '@/stores/app'
 import { userApi } from '@/api/user'
 import { postApi } from '@/api/post'
-import { Search, Sunny, Moon, Fold, Loading } from '@element-plus/icons-vue'
+import { Search, Sunny, Moon, Fold, Loading, Monitor, MoreFilled } from '@element-plus/icons-vue'
 import { formatDate } from '@/utils/format'
 import { highlightKeyword } from '@/utils/highlight'
 
@@ -144,7 +147,16 @@ const logoText = computed(() => {
   return 'DJ Blog'
 })
 
-function toggleTheme() {
+const themeTooltip = computed(() => {
+  const modeMap = {
+    light: '浅色模式（点击切换）',
+    dark: '深色模式（点击切换）',
+    system: '跟随系统（点击切换）'
+  }
+  return modeMap[appStore.themeMode] || '浅色模式'
+})
+
+function handleToggleTheme() {
   appStore.toggleTheme()
 }
 
@@ -471,9 +483,23 @@ onMounted(async () => {
   font-size: 20px;
   cursor: pointer;
   color: var(--el-text-color-regular);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   &:hover {
     color: var(--el-color-primary);
+  }
+}
+
+:deep(.el-dropdown-menu__item) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &.is-active {
+    color: var(--el-color-primary);
+    background-color: var(--el-color-primary-light-9);
   }
 }
 

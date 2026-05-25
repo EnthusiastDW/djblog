@@ -63,10 +63,13 @@
           </el-breadcrumb>
         </div>
         <div class="header-right">
-          <el-icon class="theme-btn" @click="toggleTheme">
-            <Sunny v-if="appStore.theme === 'dark'" />
-            <Moon v-else />
-          </el-icon>
+          <el-tooltip :content="themeTooltip" placement="bottom">
+            <el-icon class="theme-btn" @click="toggleTheme">
+              <Sunny v-if="appStore.themeMode === 'light'" />
+              <Moon v-if="appStore.themeMode === 'dark'" />
+              <Monitor v-if="appStore.themeMode === 'system'" />
+            </el-icon>
+          </el-tooltip>
           <el-dropdown>
             <span class="user-dropdown">
               <el-avatar :size="32" :src="userStore.user?.avatar">
@@ -103,7 +106,7 @@ import { useUserStore } from '@/stores/user'
 import { useAppStore } from '@/stores/app'
 import {
   Odometer, Document, Folder, PriceTag, ChatDotRound, User,
-  Expand, Fold, Sunny, Moon, ArrowDown, Setting, InfoFilled
+  Expand, Fold, Sunny, Moon, ArrowDown, Setting, InfoFilled, Monitor
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -115,6 +118,15 @@ const isCollapsed = ref(false)
 
 const activeMenu = computed(() => route.path)
 const currentTitle = computed(() => route.meta.title || '后台管理')
+
+const themeTooltip = computed(() => {
+  const modeMap = {
+    light: '浅色模式（点击切换）',
+    dark: '深色模式（点击切换）',
+    system: '跟随系统（点击切换）'
+  }
+  return modeMap[appStore.themeMode] || '浅色模式'
+})
 
 function toggleCollapse() {
   isCollapsed.value = !isCollapsed.value

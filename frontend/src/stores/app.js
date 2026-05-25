@@ -1,23 +1,38 @@
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { usePreferredDark } from '@vueuse/core'
 import api from '@/api/index'
 
 export const useAppStore = defineStore('app', () => {
   const preferredDark = usePreferredDark()
-  // 默认主题改为深色，如果没有 localStorage 设置
-  const theme = ref(localStorage.getItem('theme') || 'dark')
+
+  // 主题模式: 'light' | 'dark' | 'system'
+  const themeMode = ref(localStorage.getItem('themeMode') || 'system')
+
+  // 计算实际应用的主题
+  const theme = computed(() => {
+    if (themeMode.value === 'system') {
+      return preferredDark.value ? 'dark' : 'light'
+    }
+    return themeMode.value
+  })
+
+  // 监听 theme 变化，切换 dark 类
+  watch(theme, (newTheme) => {
+    document.documentElement.classList.toggle('dark', newTheme === 'dark')
+  }, { immediate: true })
+
+  // 监听 themeMode 变化，保存到 localStorage
+  watch(themeMode, (newMode) => {
+    localStorage.setItem('themeMode', newMode)
+  })
+
   const sidebarCollapsed = ref(false)
   const leftSidebarVisible = ref(false)
   const bgImage = ref(localStorage.getItem('bgImage') || '')
   const bgOpacity = ref(parseFloat(localStorage.getItem('bgOpacity')) || 0.2)
   const todayVisitors = ref(0)
   const totalVisitors = ref(0)
-
-  watch(theme, (newTheme) => {
-    localStorage.setItem('theme', newTheme)
-    document.documentElement.classList.toggle('dark', newTheme === 'dark')
-  }, { immediate: true })
 
   watch(bgImage, (newBgImage) => {
     localStorage.setItem('bgImage', newBgImage)
@@ -28,7 +43,18 @@ export const useAppStore = defineStore('app', () => {
   })
 
   function toggleTheme() {
-    theme.value = theme.value === 'light' ? 'dark' : 'light'
+    // 三种模式循环切换: light -> dark -> system -> light
+    if (themeMode.value === 'light') {
+      themeMode.value = 'dark'
+    } else if (themeMode.value === 'dark') {
+      themeMode.value = 'system'
+    } else {
+      themeMode.value = 'light'
+    }
+  }
+
+  function setThemeMode(mode) {
+    themeMode.value = mode
   }
 
   function toggleSidebar() {
@@ -76,6 +102,7 @@ export const useAppStore = defineStore('app', () => {
 
   return {
     theme,
+    themeMode,
     sidebarCollapsed,
     leftSidebarVisible,
     bgImage,
@@ -83,6 +110,7 @@ export const useAppStore = defineStore('app', () => {
     todayVisitors,
     totalVisitors,
     toggleTheme,
+    setThemeMode,
     toggleSidebar,
     toggleLeftSidebar,
     setBackground,
