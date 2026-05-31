@@ -1,4 +1,4 @@
-package site.dengwei.blog.config;
+package site.dengwei.blog.interceptor;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

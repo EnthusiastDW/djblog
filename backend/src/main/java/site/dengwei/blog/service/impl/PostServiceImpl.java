@@ -30,6 +30,7 @@ import site.dengwei.blog.service.AiSlugService;
 import site.dengwei.blog.service.AiSummaryService;
 import site.dengwei.blog.service.PostService;
 import site.dengwei.blog.service.PostTagService;
+import site.dengwei.blog.service.platform.PlatformSyncOrchestrator;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -54,6 +55,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     private final AiSlugService aiSlugService;
     private final PostTagService postTagService;
     private final AiSummaryService aiSummaryService;
+    private final PlatformSyncOrchestrator platformSyncOrchestrator;
 
     @Cacheable(key = "#id")
     @Override
@@ -344,6 +346,11 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         boolean result = saveOrUpdate(post);
         if (result && request.getTagIds() != null && request.getTagIds().length > 0) {
             postTagService.setPostTags(post.getId(), java.util.Arrays.asList(request.getTagIds()));
+        }
+        // 触发异步同步到指定平台
+        if (result && request.getSyncPlatforms() != null && request.getSyncPlatforms().length > 0) {
+            log.info("触发异步同步文章 {} 到平台: {}", post.getId(), Arrays.toString(request.getSyncPlatforms()));
+            platformSyncOrchestrator.syncPost(post.getId(), request.getSyncPlatforms());
         }
         return result ? post.getId() : null;
     }

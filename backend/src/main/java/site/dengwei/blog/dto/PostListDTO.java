@@ -103,4 +103,9 @@ public class PostListDTO implements Serializable {
      */
     @TableField(exist = false)
     private String matchedContent;
+
+    /**
+     * 已同步的平台列表(逗号分隔，如"JUEJIN,CSDN")
+     */
+    private String syncPlatforms;
 }

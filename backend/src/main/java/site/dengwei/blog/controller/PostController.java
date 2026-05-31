@@ -14,9 +14,13 @@ import site.dengwei.blog.dto.Response;
 import site.dengwei.blog.dto.request.*;
 import site.dengwei.blog.entity.Post;
 import site.dengwei.blog.enums.PostStatus;
+import site.dengwei.blog.entity.PostPlatformSync;
 import site.dengwei.blog.service.AiSummaryService;
+import site.dengwei.blog.service.PostPlatformSyncService;
 import site.dengwei.blog.service.PostService;
 import site.dengwei.blog.service.PostVisitStatisticsService;
+import site.dengwei.blog.service.platform.PlatformSyncOrchestrator;
+import site.dengwei.blog.service.platform.dto.PlatformSyncResult;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -38,6 +42,8 @@ public class PostController {
     private final PostService postService;
     private final AiSummaryService aiSummaryService;
     private final PostVisitStatisticsService postVisitStatisticsService;
+    private final PlatformSyncOrchestrator platformSyncOrchestrator;
+    private final PostPlatformSyncService postPlatformSyncService;
 
     /**
      * 分页查询所有文章
@@ -234,6 +240,27 @@ public class PostController {
     public Response<List<Post>> getPopularPosts(
             @RequestParam(defaultValue = "10") Integer size) {
         return Response.success(postService.getPopularPosts(size));
+    }
+
+    /**
+     * 手动同步文章到指定平台
+     */
+    @PostMapping("/{id}/sync/{platform}")
+    public Response<PlatformSyncResult> syncToPlatform(@PathVariable Long id, @PathVariable String platform) {
+        Post post = postService.getByIdOrThrow(id);
+        if (post.getStatus() != PostStatus.PUBLISHED) {
+            return Response.errorT("只能同步已发布的文章");
+        }
+        PlatformSyncResult result = platformSyncOrchestrator.syncPostToPlatform(id, platform);
+        return Response.success(result);
+    }
+
+    /**
+     * 获取文章同步状态
+     */
+    @GetMapping("/{id}/sync-status")
+    public Response<List<PostPlatformSync>> getSyncStatus(@PathVariable Long id) {
+        return Response.success(postPlatformSyncService.getByPostId(id));
     }
 
     /**

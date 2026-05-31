@@ -91,4 +91,10 @@ public class Post extends Model<Post> implements Serializable {
      */
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
+
+    /**
+     * 已同步的平台列表(逗号分隔，如"JUEJIN,CSDN")
+     * 冗余字段，用于快速查询
+     */
+    private String syncPlatforms;
 }

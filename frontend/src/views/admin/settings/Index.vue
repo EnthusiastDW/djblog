@@ -1,34 +1,39 @@
 <template>
   <div class="settings-page">
     <h2 class="page-title">全局设置</h2>
-    
-    <el-card>
-      <template #header>
-        <span>背景设置</span>
-      </template>
-      
-      <el-form label-width="100px">
-        <el-form-item label="背景图片">
-          <el-input v-model="bgImage" placeholder="输入图片URL或上传" clearable>
-            <template #append>
-              <el-button @click="handleUpload">上传</el-button>
-            </template>
-          </el-input>
-          <div v-if="bgImage" class="preview-box">
-            <el-image :src="bgImage" fit="cover" />
-          </div>
-        </el-form-item>
-        
-        <el-form-item label="透明度">
-          <el-slider v-model="bgOpacity" :min="0" :max="1" :step="0.1" show-stops />
-          <span class="opacity-value">{{ bgOpacity }}</span>
-        </el-form-item>
-        
-        <el-form-item>
-          <el-button type="primary" @click="handleSave" :loading="saving">保存</el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
+
+    <el-tabs v-model="activeTab">
+      <el-tab-pane label="背景设置" name="bg">
+        <el-card>
+          <template #header>
+            <span>背景设置</span>
+          </template>
+
+          <el-form label-width="100px">
+            <el-form-item label="背景图片">
+              <el-input v-model="bgImage" placeholder="输入图片URL或上传" clearable>
+                <template #append>
+                  <el-button @click="handleUpload">上传</el-button>
+                </template>
+              </el-input>
+              <div v-if="bgImage" class="preview-box">
+                <el-image :src="bgImage" fit="cover" />
+              </div>
+            </el-form-item>
+
+            <el-form-item label="透明度">
+              <el-slider v-model="bgOpacity" :min="0" :max="1" :step="0.1" show-stops />
+              <span class="opacity-value">{{ bgOpacity }}</span>
+            </el-form-item>
+
+            <el-form-item>
+              <el-button type="primary" @click="handleSave" :loading="saving">保存</el-button>
+            </el-form-item>
+          </el-form>
+        </el-card>
+      </el-tab-pane>
+
+    </el-tabs>
   </div>
 </template>
 
@@ -37,6 +42,7 @@ import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import api from '@/api/index'
 import { useAppStore } from '@/stores/app'
+const activeTab = ref('bg')
 
 const appStore = useAppStore()
 const bgImage = ref('')
@@ -95,7 +101,7 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .settings-page {
-  max-width: 600px;
+  max-width: 800px;
 }
 
 .page-title {
@@ -110,7 +116,7 @@ onMounted(() => {
   height: 120px;
   border-radius: 8px;
   overflow: hidden;
-  
+
   .el-image {
     width: 100%;
     height: 100%;

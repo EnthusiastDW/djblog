@@ -58,4 +58,9 @@ public class BasePostRequest {
      * 标签ID列表
      */
     private Long[] tagIds;
+
+    /**
+     * 同步到平台列表（如["JUEJIN","CSDN"]）
+     */
+    private String[] syncPlatforms;
 }

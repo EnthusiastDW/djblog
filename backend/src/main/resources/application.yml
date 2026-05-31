@@ -42,8 +42,24 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
+# 平台发布凭据（从环境变量读取，避免明文存储）
+platform:
+  juejin:
+    api-url: https://api.juejin.cn/content_api/v1/article/publish
+    access-token: ${PLATFORM_JUEJIN_ACCESS_TOKEN:}
+  csdn:
+    api-url: https://api.csdn.net/
+    access-token: ${PLATFORM_CSDN_ACCESS_TOKEN:}
+  cnblog:
+    api-url: https://i.cnblogs.com/openapi/v1/posts
+    personal-token: ${PLATFORM_CNBLOG_PERSONAL_TOKEN:}
+  segmentfault:
+    api-url: https://api.segmentfault.com/
+    access-token: ${PLATFORM_SEGMENTFAULT_ACCESS_TOKEN:}
+
 # 博客评论审核配置（全局）
 blog:
+  site-domain: ${BLOG_SITE_DOMAIN:https://blog.dengwei.site}
   comment:
     # 是否启用评论审核（true: 需要审核，false: 默认通过）
     audit-enabled: false

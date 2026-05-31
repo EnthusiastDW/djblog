@@ -113,5 +113,15 @@ export const postApi = {
         'Content-Type': 'multipart/form-data'
       }
     })
+  },
+
+  // 同步文章到指定平台
+  syncToPlatform(id, platform) {
+    return api.post(`/post/${id}/sync/${platform}`)
+  },
+
+  // 获取文章同步状态
+  getSyncStatus(id) {
+    return api.get(`/post/${id}/sync-status`)
   }
 }

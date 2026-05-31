@@ -68,6 +68,22 @@
                 </el-tag>
               </template>
             </el-table-column>
+            <el-table-column label="同步" width="180">
+              <template #default="{ row }">
+                <div class="sync-indicators">
+                  <span
+                    v-for="p in platformList"
+                    :key="p.code"
+                    class="sync-badge"
+                    :class="[getSyncBadgeClass(row, p.code), { disabled: isSyncing(row, p.code) }]"
+                    :title="getSyncTitle(row, p.code)"
+                    @click.stop="!isSyncing(row, p.code) && handlePlatformSync(row, p.code)"
+                  >
+                    {{ isSyncing(row, p.code) ? '...' : p.short }}
+                  </span>
+                </div>
+              </template>
+            </el-table-column>
             <el-table-column prop="viewCount" label="浏览" width="80" />
             <el-table-column prop="createdAt" label="创建时间" width="180">
               <template #default="{ row }">
@@ -168,6 +184,51 @@ const filters = reactive({
   status: '',
   categoryId: null
 })
+
+// 平台同步相关
+const platformList = [
+  { code: 'CNBLOG', short: '博', label: '博客园' }
+]
+const syncingMap = ref({})
+
+function isSyncing(row, platformCode) {
+  return !!syncingMap.value[`${row.id}:${platformCode}`]
+}
+
+function getSyncBadgeClass(row, platformCode) {
+  if (isSyncing(row, platformCode)) return 'syncing'
+  if (!row.syncPlatforms) return 'not-synced'
+  const synced = row.syncPlatforms.split(',').includes(platformCode)
+  return synced ? 'synced' : 'not-synced'
+}
+
+function getSyncTitle(row, platformCode) {
+  const platform = platformList.find(p => p.code === platformCode)
+  if (isSyncing(row, platformCode)) return `正在同步到${platform.label}...`
+  if (!row.syncPlatforms) return `点击同步到${platform.label}`
+  const synced = row.syncPlatforms.split(',').includes(platformCode)
+  if (synced) return `已同步到${platform.label}`
+  return `点击同步到${platform.label}`
+}
+
+async function handlePlatformSync(row, platformCode) {
+  const key = `${row.id}:${platformCode}`
+  if (syncingMap.value[key]) return
+  syncingMap.value[key] = true
+  try {
+    const res = await postApi.syncToPlatform(row.id, platformCode)
+    if (res.data.success) {
+      ElMessage.success(`同步到${platformList.find(p => p.code === platformCode).label}成功`)
+      fetchPosts()
+    } else {
+      ElMessage.error(`同步失败: ${res.data.errorMessage || '未知错误'}`)
+    }
+  } catch (e) {
+    ElMessage.error('同步请求失败')
+  } finally {
+    syncingMap.value[key] = false
+  }
+}
 
 async function fetchCategories() {
   try {
@@ -346,6 +407,55 @@ onMounted(() => {
     display: flex;
     justify-content: flex-end;
     margin-top: 20px;
+  }
+
+  .sync-indicators {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+
+    .sync-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &.syncing {
+        background: var(--el-color-warning-light-9);
+        color: var(--el-color-warning);
+        border: 1px solid var(--el-color-warning-light-5);
+      }
+
+      &.synced {
+        background: var(--el-color-success-light-8);
+        color: var(--el-color-success);
+        border: 1px solid var(--el-color-success-light-5);
+      }
+
+      &.not-synced {
+        background: var(--el-color-info-light-9);
+        color: var(--el-color-info);
+        border: 1px solid var(--el-color-info-light-7);
+
+        &:hover {
+          background: var(--el-color-primary-light-9);
+          color: var(--el-color-primary);
+          border-color: var(--el-color-primary-light-5);
+        }
+      }
+
+      &.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+      }
+    }
   }
 }
 </style>

@@ -78,4 +78,16 @@ public class Response<T> implements Serializable {
     public static <T> Response<T> error(String message, T data) {
         return new Response<>(500, message, data);
     }
+
+    /**
+     * 泛型错误响应，用于需要指定泛型类型的场景
+     *
+     * @param message 错误消息
+     * @param <T> 数据类型
+     * @return Response实例
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> Response<T> errorT(String message) {
+        return (Response<T>) new Response<>(500, message, null);
+    }
 }

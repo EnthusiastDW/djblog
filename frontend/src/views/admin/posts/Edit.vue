@@ -30,6 +30,20 @@
             上次保存: {{ formatLastSaveTime }}
           </span>
         </div>
+        <!-- 同步平台选择 -->
+        <div class="sync-platforms" v-if="form.id">
+          <span class="sync-label">同步到：</span>
+          <el-checkbox-group v-model="form.syncPlatforms" size="small">
+            <el-checkbox
+              v-for="p in platformList"
+              :key="p.code"
+              :label="p.code"
+              :disabled="p.disabled"
+            >
+              {{ p.label }}
+            </el-checkbox>
+          </el-checkbox-group>
+        </div>
         <el-button @click="handleSaveDraft" :loading="saving">保存草稿</el-button>
         <el-button type="primary" @click="handlePublish" :loading="publishing">发布</el-button>
       </div>
@@ -163,6 +177,9 @@ const tagLoading = ref(false)
 const summaryLoading = ref(false)
 const categoryDialogVisible = ref(false)
 
+// 平台同步相关
+const platformList = ref([])
+
 // 自动保存相关
 const autoSaveEnabled = ref(false)
 const autoSaveInterval = ref(120) // 默认2分钟（秒）
@@ -178,7 +195,8 @@ const form = reactive({
   content: '',
   categoryId: null,
   tagIds: [],
-  coverImage: ''
+  coverImage: '',
+  syncPlatforms: []
 })
 
 const rules = {
@@ -463,12 +481,34 @@ function handleCategoryCreated() {
   fetchCategories()
 }
 
-onMounted(() => {
+async function fetchSyncStatus() {
+  if (!form.id) return
+  try {
+    const res = await postApi.getSyncStatus(form.id)
+    const records = res.data || []
+    const statusMap = {}
+    records.forEach(r => { statusMap[r.platformCode] = r })
+
+    const basePlatforms = [
+      { code: 'CNBLOG', label: '博客园' }
+    ]
+    platformList.value = basePlatforms.map(p => ({
+      ...p,
+      disabled: statusMap[p.code]?.syncStatus === 'SUCCESS',
+      syncStatus: statusMap[p.code]?.syncStatus
+    }))
+  } catch (e) {
+    console.error('获取同步状态失败', e)
+  }
+}
+
+onMounted(async () => {
   fetchCategories()
   fetchTags()
   loadHighlightTheme(appStore.theme)
   if (isEdit.value) {
-    fetchPost()
+    await fetchPost()
+    await fetchSyncStatus()
   }
   // 启动自动保存
   startAutoSaveTimer()
@@ -596,6 +636,21 @@ watch(() => appStore.theme, (newTheme) => {
 
   html.light .editor-preview {
     @include code-theme-light;
+  }
+
+  .sync-platforms {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 8px;
+    border-right: 1px solid var(--el-border-color);
+    border-left: 1px solid var(--el-border-color);
+
+    .sync-label {
+      font-size: 12px;
+      color: var(--el-text-color-secondary);
+      white-space: nowrap;
+    }
   }
 }
 </style>
