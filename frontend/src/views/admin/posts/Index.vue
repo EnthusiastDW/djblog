@@ -68,19 +68,45 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="同步" width="180">
+            <el-table-column label="同步" width="220">
               <template #default="{ row }">
                 <div class="sync-indicators">
-                  <span
-                    v-for="p in platformList"
-                    :key="p.code"
-                    class="sync-badge"
-                    :class="[getSyncBadgeClass(row, p.code), { disabled: isSyncing(row, p.code) }]"
-                    :title="getSyncTitle(row, p.code)"
-                    @click.stop="!isSyncing(row, p.code) && handlePlatformSync(row, p.code)"
-                  >
-                    {{ isSyncing(row, p.code) ? '...' : p.short }}
-                  </span>
+                  <template v-for="p in platformList" :key="p.code">
+                    <!-- 已同步且有外部链接：显示为超链接 -->
+                    <a
+                      v-if="getSyncBadgeClass(row, p.code) === 'synced' && row.syncUrls?.[p.code]"
+                      :href="row.syncUrls[p.code]"
+                      target="_blank"
+                      class="sync-badge synced-link"
+                      :title="`已同步到${p.label}`"
+                    >
+                      {{ p.short }}
+                    </a>
+                    <!-- 同步中：禁用 -->
+                    <span
+                      v-else-if="isSyncing(row, p.code)"
+                      class="sync-badge syncing disabled"
+                    >
+                      ...
+                    </span>
+                    <!-- 已同步但无外部链接（兜底）：显示为不可点击的已同步标识 -->
+                    <span
+                      v-else-if="getSyncBadgeClass(row, p.code) === 'synced'"
+                      class="sync-badge synced"
+                      title="已同步"
+                    >
+                      {{ p.short }}
+                    </span>
+                    <!-- 未同步：可点击触发同步 -->
+                    <span
+                      v-else
+                      class="sync-badge not-synced"
+                      :title="`点击同步到${p.label}`"
+                      @click.stop="handlePlatformSync(row, p.code)"
+                    >
+                      {{ p.short }}
+                    </span>
+                  </template>
                 </div>
               </template>
             </el-table-column>
@@ -436,6 +462,27 @@ onMounted(() => {
         background: var(--el-color-success-light-8);
         color: var(--el-color-success);
         border: 1px solid var(--el-color-success-light-5);
+      }
+
+      &.synced-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-decoration: none;
+        background: var(--el-color-success-light-8);
+        color: var(--el-color-success);
+        border: 1px solid var(--el-color-success-light-5);
+        transition: all 0.2s;
+
+        &:hover {
+          background: var(--el-color-success-light-7);
+          text-decoration: underline;
+        }
       }
 
       &.not-synced {

@@ -29,6 +29,9 @@ import site.dengwei.blog.mapper.UserMapper;
 import site.dengwei.blog.service.AiSlugService;
 import site.dengwei.blog.service.AiSummaryService;
 import site.dengwei.blog.service.PostService;
+import site.dengwei.blog.entity.PostPlatformSync;
+import site.dengwei.blog.enums.PlatformSyncStatus;
+import site.dengwei.blog.mapper.PostPlatformSyncMapper;
 import site.dengwei.blog.service.PostTagService;
 import site.dengwei.blog.service.platform.PlatformSyncOrchestrator;
 
@@ -56,6 +59,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     private final PostTagService postTagService;
     private final AiSummaryService aiSummaryService;
     private final PlatformSyncOrchestrator platformSyncOrchestrator;
+    private final PostPlatformSyncMapper postPlatformSyncMapper;
 
     @Cacheable(key = "#id")
     @Override
@@ -278,6 +282,21 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         
         // 直接从 post 表读取浏览量（已定期同步）
         dto.setViewCount(post.getViewCount() != null ? post.getViewCount() : 0L);
+
+        // 填充平台同步URL映射
+        if (post.getSyncPlatforms() != null && !post.getSyncPlatforms().isEmpty()) {
+            List<PostPlatformSync> syncRecords = postPlatformSyncMapper.selectList(
+                    new LambdaQueryWrapper<PostPlatformSync>()
+                            .eq(PostPlatformSync::getPostId, post.getId())
+                            .eq(PostPlatformSync::getSyncStatus, PlatformSyncStatus.SUCCESS)
+                            .isNotNull(PostPlatformSync::getExternalUrl)
+            );
+            java.util.Map<String, String> syncUrls = new java.util.HashMap<>();
+            for (PostPlatformSync record : syncRecords) {
+                syncUrls.put(record.getPlatformCode(), record.getExternalUrl());
+            }
+            dto.setSyncUrls(syncUrls);
+        }
         
         return dto;
     }

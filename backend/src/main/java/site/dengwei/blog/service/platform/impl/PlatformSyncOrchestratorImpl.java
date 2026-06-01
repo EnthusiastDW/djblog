@@ -87,15 +87,21 @@ public class PlatformSyncOrchestratorImpl implements PlatformSyncOrchestrator {
         Lock lock = syncLocks.computeIfAbsent(lockKey, k -> new ReentrantLock());
         lock.lock();
         try {
-            // 检查是否正在同步中
+            // 检查同步状态
             PostPlatformSync existing = postPlatformSyncMapper.selectOne(
                     new LambdaQueryWrapper<PostPlatformSync>()
                             .eq(PostPlatformSync::getPostId, postId)
                             .eq(PostPlatformSync::getPlatformCode, platformCode)
             );
-            if (existing != null && existing.getSyncStatus() == PlatformSyncStatus.SYNCING) {
-                log.warn("文章 {} 正在同步到平台 {} 中，拒绝重复请求", postId, platformCode);
-                return PlatformSyncResult.failed(platformCode, "该平台正在同步中，请勿重复操作");
+            if (existing != null) {
+                if (existing.getSyncStatus() == PlatformSyncStatus.SYNCING) {
+                    log.warn("文章 {} 正在同步到平台 {} 中，拒绝重复请求", postId, platformCode);
+                    return PlatformSyncResult.failed(platformCode, "该平台正在同步中，请勿重复操作");
+                }
+                if (existing.getSyncStatus() == PlatformSyncStatus.SUCCESS) {
+                    log.warn("文章 {} 已同步到平台 {} 成功，拒绝重复同步", postId, platformCode);
+                    return PlatformSyncResult.failed(platformCode, "该文章已在" + existing.getPlatformCode() + "同步成功，无需重复同步");
+                }
             }
 
             PlatformSyncRequest request = buildRequest(post);

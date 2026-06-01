@@ -108,4 +108,9 @@ public class PostListDTO implements Serializable {
      * 已同步的平台列表(逗号分隔，如"JUEJIN,CSDN")
      */
     private String syncPlatforms;
+
+    /**
+     * 平台同步URL映射（platformCode → externalUrl）
+     */
+    private java.util.Map<String, String> syncUrls;
 }
