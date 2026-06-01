@@ -149,7 +149,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { postApi } from '@/api/post'
@@ -159,6 +159,7 @@ import { ArrowLeft, MagicStick, Setting, Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import MarkdownIt from 'markdown-it'
 import { createHighlightWithWrapper, setupInlineCodeCopy } from '@/utils/highlight'
+import { mermaidPlugin, initializeMermaid, renderMermaid } from '@/utils/mermaid-plugin'
 import CategoryCreateDialog from '@/components/CategoryCreateDialog.vue'
 
 const route = useRoute()
@@ -222,7 +223,7 @@ function loadHighlightTheme(theme) {
 
 const md = new MarkdownIt({
   highlight: createHighlightWithWrapper()
-})
+}).use(mermaidPlugin)
 
 // 配置行内代码复制按钮
 setupInlineCodeCopy(md)
@@ -231,6 +232,12 @@ const renderedContent = computed(() => {
   if (!form.content) return ''
   return md.render(form.content)
 })
+
+// 内容变化后触发 Mermaid 渲染图表
+watch(renderedContent, async () => {
+  await nextTick()
+  renderMermaid()
+}, { immediate: true })
 
 // 格式化上次保存时间
 const formatLastSaveTime = computed(() => {
@@ -505,6 +512,7 @@ async function fetchSyncStatus() {
 onMounted(async () => {
   fetchCategories()
   fetchTags()
+  initializeMermaid(appStore.theme)
   loadHighlightTheme(appStore.theme)
   if (isEdit.value) {
     await fetchPost()
@@ -519,8 +527,11 @@ onUnmounted(() => {
   stopAutoSaveTimer()
 })
 
-watch(() => appStore.theme, (newTheme) => {
+watch(() => appStore.theme, async (newTheme) => {
   loadHighlightTheme(newTheme)
+  initializeMermaid(newTheme)
+  await nextTick()
+  renderMermaid()
 })
 </script>
 

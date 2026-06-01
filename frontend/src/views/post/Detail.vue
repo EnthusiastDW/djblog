@@ -204,7 +204,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, reactive, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, reactive, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useAppStore } from '@/stores/app'
@@ -216,6 +216,7 @@ import { Calendar, Folder, View } from '@element-plus/icons-vue'
 import MarkdownIt from 'markdown-it'
 import anchor from 'markdown-it-anchor'
 import { createHighlightWithWrapper, setupInlineCodeCopy } from '@/utils/highlight'
+import { mermaidPlugin, initializeMermaid, renderMermaid } from '@/utils/mermaid-plugin'
 import { setCookie, getCookie } from '@/utils/cookie'
 import { ElMessage, ElImageViewer } from 'element-plus'
 import CommentReply from '@/components/CommentReply.vue'
@@ -286,7 +287,7 @@ const md = new MarkdownIt({
 }).use(anchor, {
   slugify: (str) => str.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^\w\u4e00-\u9fa5-]/g, ''),
   permalink: false
-})
+}).use(mermaidPlugin)
 
 // 配置行内代码复制按钮
 setupInlineCodeCopy(md)
@@ -336,6 +337,12 @@ const renderedContent = computed(() => {
   if (!post.value?.content) return ''
   return md.render(post.value.content)
 })
+
+// 当渲染内容更新后，触发 Mermaid 渲染图表
+watch(renderedContent, async () => {
+  await nextTick()
+  renderMermaid()
+}, { immediate: true })
 
 async function fetchPostDetail() {
   loading.value = true
@@ -534,13 +541,17 @@ async function submitAnonymousReply(comment) {
 
 onMounted(() => {
   fetchPostDetail()
+  initializeMermaid(appStore.theme)
   // 加载当前主题的代码高亮样式
   loadHighlightTheme(appStore.theme)
 })
 
-// 监听主题变化，动态切换代码高亮主题
-watch(() => appStore.theme, (newTheme) => {
+// 监听主题变化，动态切换代码高亮主题和 Mermaid 主题
+watch(() => appStore.theme, async (newTheme) => {
   loadHighlightTheme(newTheme)
+  initializeMermaid(newTheme)
+  await nextTick()
+  renderMermaid()
 })
 
 // 监听路由参数变化，重新加载文章

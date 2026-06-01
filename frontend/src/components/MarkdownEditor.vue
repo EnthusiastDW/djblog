@@ -36,11 +36,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useAppStore } from '@/stores/app'
 import MarkdownIt from 'markdown-it'
 import anchor from 'markdown-it-anchor'
 import { createHighlightWithWrapper, setupInlineCodeCopy } from '@/utils/highlight'
+import { mermaidPlugin, initializeMermaid, renderMermaid } from '@/utils/mermaid-plugin'
 
 const props = defineProps({
   modelValue: {
@@ -83,7 +84,7 @@ const md = new MarkdownIt({
 }).use(anchor, {
   slugify: (str) => str.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^\w\u4e00-\u9fa5-]/g, ''),
   permalink: false
-})
+}).use(mermaidPlugin)
 
 // 配置行内代码复制按钮
 setupInlineCodeCopy(md)
@@ -117,14 +118,24 @@ function insertMarkdown(prefix, suffix) {
   }, 0)
 }
 
+// 监听内容变化，触发 Mermaid 渲染图表
+watch(renderedContent, async () => {
+  await nextTick()
+  renderMermaid()
+}, { immediate: true })
+
 // 组件挂载时加载主题
 onMounted(() => {
+  initializeMermaid(appStore.theme)
   loadHighlightTheme(appStore.theme)
 })
 
 // 监听主题变化
-watch(() => appStore.theme, (newTheme) => {
+watch(() => appStore.theme, async (newTheme) => {
   loadHighlightTheme(newTheme)
+  initializeMermaid(newTheme)
+  await nextTick()
+  renderMermaid()
 })
 </script>
 
