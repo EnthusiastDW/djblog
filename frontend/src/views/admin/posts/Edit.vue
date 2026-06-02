@@ -1,7 +1,7 @@
 <template>
-  <div class="admin-post-edit">
+  <div class="admin-post-edit" :class="{ 'is-fullscreen': fullscreen }">
     <div class="page-header">
-      <el-button @click="router.back()">
+      <el-button @click="handleBack">
         <el-icon><ArrowLeft /></el-icon>
         返回
       </el-button>
@@ -49,12 +49,12 @@
       </div>
     </div>
 
-    <el-form :model="form" :rules="rules" ref="formRef" label-width="80px">
+    <el-form :model="form" :rules="rules" ref="formRef" label-width="80px" class="edit-form">
       <el-form-item label="标题" prop="title">
         <el-input v-model="form.title" placeholder="请输入文章标题" />
       </el-form-item>
       
-      <el-form-item label="摘要" prop="summary">
+      <el-form-item label="摘要" prop="summary" v-show="!fullscreen">
         <el-input v-model="form.summary" type="textarea" :rows="2" placeholder="请输入文章摘要" />
         <el-button type="primary" link :loading="summaryLoading" @click="handleGenerateSummary">
           <el-icon><MagicStick /></el-icon>
@@ -62,55 +62,56 @@
         </el-button>
       </el-form-item>
 
-      <!-- 分类选择 -->
-      <el-form-item label="分类" prop="categoryId">
-        <div class="category-select-wrapper">
-          <el-tree-select
-            v-model="form.categoryId"
-            :data="categoryTree"
-            :props="{ label: 'name', value: 'id', children: 'children' }"
-            placeholder="请选择分类"
-            check-strictly
-            clearable
+      <!-- 分类、标签、封面紧凑排列 -->
+      <div class="meta-row" v-show="!fullscreen">
+        <el-form-item label="分类" prop="categoryId" class="meta-item">
+          <div class="category-select-wrapper">
+            <el-tree-select
+              v-model="form.categoryId"
+              :data="categoryTree"
+              :props="{ label: 'name', value: 'id', children: 'children' }"
+              placeholder="请选择分类"
+              check-strictly
+              clearable
+              filterable
+              :render-after-expand="false"
+              :loading="categoryLoading"
+              style="width: 100%;"
+            />
+            <el-button type="primary" link class="add-category-btn" @click="handleAddCategory">
+              <el-icon><Plus /></el-icon>
+              新增
+            </el-button>
+          </div>
+        </el-form-item>
+
+        <el-form-item label="标签" prop="tagIds" class="meta-item">
+          <el-select
+            v-model="form.tagIds"
+            multiple
+            placeholder="选择或输入新标签"
             filterable
-            :render-after-expand="false"
-            :loading="categoryLoading"
+            allow-create
+            default-first-option
+            :loading="tagLoading"
             style="width: 100%;"
-          />
-          <el-button type="primary" link class="add-category-btn" @click="handleAddCategory">
-            <el-icon><Plus /></el-icon>
-            新增分类
-          </el-button>
-        </div>
-      </el-form-item>
+            @change="handleTagChange"
+          >
+            <el-option
+              v-for="tag in tags"
+              :key="tag.id"
+              :label="tag.name"
+              :value="tag.id"
+            />
+          </el-select>
+        </el-form-item>
 
-      <!-- 标签选择 -->
-      <el-form-item label="标签" prop="tagIds">
-        <el-select
-          v-model="form.tagIds"
-          multiple
-          placeholder="请选择标签或输入新标签"
-          filterable
-          allow-create
-          default-first-option
-          :loading="tagLoading"
-          style="width: 100%;"
-          @change="handleTagChange"
-        >
-          <el-option
-            v-for="tag in tags"
-            :key="tag.id"
-            :label="tag.name"
-            :value="tag.id"
-          />
-        </el-select>
-      </el-form-item>
+        <el-form-item label="封面" class="meta-item">
+          <el-input v-model="form.coverImage" placeholder="封面图片链接" />
+        </el-form-item>
+      </div>
 
-      <el-form-item label="封面">
-        <el-input v-model="form.coverImage" placeholder="请输入封面图片链接" />
-      </el-form-item>
-
-      <el-form-item label="内容" prop="content">
+      <el-form-item label="内容" prop="content" class="editor-form-item">
         <div class="editor-container">
           <div class="editor-toolbar">
             <el-button-group>
@@ -122,17 +123,19 @@
               <el-button size="small" @click="insertMarkdown('[', '](url)')">Link</el-button>
               <el-button size="small" @click="insertMarkdown('![alt](', ')')">Image</el-button>
             </el-button-group>
+            <el-button size="small" :icon="FullScreen" @click="toggleFullscreen" class="fullscreen-btn">
+              {{ fullscreen ? '退出全屏' : '全屏' }}
+            </el-button>
           </div>
           <div class="editor-main">
             <el-input
               ref="editorRef"
               v-model="form.content"
               type="textarea"
-              :rows="20"
               placeholder="请输入文章内容（支持Markdown格式）"
               class="editor-textarea"
             />
-            <div class="editor-preview" v-html="renderedContent"></div>
+            <div class="editor-preview" ref="previewRef" v-html="renderedContent" @scroll="onPreviewScroll"></div>
           </div>
         </div>
       </el-form-item>
@@ -150,13 +153,13 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { postApi } from '@/api/post'
 import { categoryApi } from '@/api/category'
 import { tagApi } from '@/api/tag'
-import { ArrowLeft, MagicStick, Setting, Plus } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ArrowLeft, MagicStick, Setting, Plus, FullScreen } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import MarkdownIt from 'markdown-it'
 import { createHighlightWithWrapper, setupInlineCodeCopy } from '@/utils/highlight'
 import { mermaidPlugin, initializeMermaid, renderMermaid } from '@/utils/mermaid-plugin'
@@ -168,6 +171,9 @@ const appStore = useAppStore()
 
 const formRef = ref(null)
 const editorRef = ref(null)
+const previewRef = ref(null)
+let syncingScroll = false
+let leaveConfirmed = false
 const saving = ref(false)
 const publishing = ref(false)
 const categories = ref([])
@@ -187,6 +193,12 @@ const autoSaveInterval = ref(120) // 默认2分钟（秒）
 const lastSaveTime = ref(null)
 let autoSaveTimer = null
 
+// 全屏编辑
+const fullscreen = ref(false)
+function toggleFullscreen() {
+  fullscreen.value = !fullscreen.value
+}
+
 const isEdit = computed(() => !!route.params.id)
 
 const form = reactive({
@@ -199,6 +211,68 @@ const form = reactive({
   coverImage: '',
   syncPlatforms: []
 })
+
+// 表单快照，用于检测未保存的更改
+const initialForm = ref(null)
+function takeFormSnapshot() {
+  initialForm.value = { ...form, tagIds: [...form.tagIds], syncPlatforms: [...form.syncPlatforms] }
+}
+function formMatchesSnapshot() {
+  if (!initialForm.value) return true
+  return initialForm.value.title === form.title
+    && initialForm.value.summary === form.summary
+    && initialForm.value.content === form.content
+    && initialForm.value.categoryId === form.categoryId
+    && JSON.stringify(initialForm.value.tagIds) === JSON.stringify(form.tagIds)
+    && initialForm.value.coverImage === form.coverImage
+    && JSON.stringify(initialForm.value.syncPlatforms) === JSON.stringify(form.syncPlatforms)
+}
+const hasUnsavedChanges = computed(() => !formMatchesSnapshot())
+
+// 编辑器与预览同步滚动
+function getTextareaEl() {
+  return editorRef.value?.$el?.querySelector('textarea')
+}
+
+function syncScroll(source, target) {
+  if (!source || !target || syncingScroll) return
+  syncingScroll = true
+  const ratio = source.scrollTop / (source.scrollHeight - source.clientHeight)
+  target.scrollTop = ratio * (target.scrollHeight - target.clientHeight)
+  syncingScroll = false
+}
+
+function onTextareaScroll() {
+  const ta = getTextareaEl()
+  syncScroll(ta, previewRef.value)
+}
+
+function onPreviewScroll() {
+  syncScroll(previewRef.value, getTextareaEl())
+}
+
+async function confirmLeave() {
+  if (!hasUnsavedChanges.value) return true
+  try {
+    await ElMessageBox.confirm('当前内容尚未保存，确定要离开吗？', '未保存的更改', {
+      confirmButtonText: '离开',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    return true
+  } catch {
+    return false
+  }
+}
+
+function handleBack() {
+  confirmLeave().then(ok => {
+    if (ok) {
+      leaveConfirmed = true
+      router.back()
+    }
+  })
+}
 
 const rules = {
   title: [{ required: true, message: '请输入文章标题', trigger: 'blur' }],
@@ -353,6 +427,7 @@ async function fetchPost() {
     form.categoryId = post.categoryId
     form.tagIds = post.tags?.map(t => t.id) || []
     form.coverImage = post.coverImage || ''
+    takeFormSnapshot()
   } catch (e) {
     console.error('获取文章失败', e)
   }
@@ -389,6 +464,7 @@ async function handleSaveDraft() {
       console.log('[Save Draft] New draft created with ID:', form.id)
     }
     lastSaveTime.value = new Date()
+    takeFormSnapshot()
     ElMessage.success('草稿已保存')
     // 不跳转页面，保持在编辑页
   } catch (e) {
@@ -470,6 +546,7 @@ async function handlePublish() {
       form.id = res.data
       console.log('[Publish] New article published with ID:', form.id)
     }
+    takeFormSnapshot()
     ElMessage.success('发布成功')
     router.push('/admin/posts')
   } catch (e) {
@@ -509,23 +586,74 @@ async function fetchSyncStatus() {
   }
 }
 
+// 监听路由参数变化，处理 Edit.vue 组件复用（/write ↔ /edit/:id）
+watch(() => route.params.id, async (newId) => {
+  // 重置表单
+  form.id = null
+  form.title = ''
+  form.summary = ''
+  form.content = ''
+  form.categoryId = null
+  form.tagIds = []
+  form.coverImage = ''
+  form.syncPlatforms = []
+
+  if (newId) {
+    await fetchPost()
+    await fetchSyncStatus()
+  }
+}, { immediate: true })
+
 onMounted(async () => {
   fetchCategories()
   fetchTags()
   initializeMermaid(appStore.theme)
   loadHighlightTheme(appStore.theme)
-  if (isEdit.value) {
-    await fetchPost()
-    await fetchSyncStatus()
-  }
   // 启动自动保存
   startAutoSaveTimer()
+  // 浏览器刷新/关闭时提示
+  window.addEventListener('beforeunload', handleBeforeUnload)
+  takeFormSnapshot()
+  // 编辑器与预览同步滚动
+  nextTick(() => {
+    const ta = getTextareaEl()
+    if (ta) {
+      ta.addEventListener('scroll', onTextareaScroll)
+    }
+  })
 })
 
 // 组件卸载时清除定时器
 onUnmounted(() => {
   stopAutoSaveTimer()
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+  const ta = getTextareaEl()
+  if (ta) {
+    ta.removeEventListener('scroll', onTextareaScroll)
+  }
 })
+
+// 路由离开前检查未保存的更改（侧边栏切换、路由跳转等）
+onBeforeRouteLeave(async (to, from, next) => {
+  // 如果已通过 handleBack 确认，直接放行
+  if (leaveConfirmed) {
+    leaveConfirmed = false
+    next()
+    return
+  }
+  if (await confirmLeave()) {
+    next()
+  } else {
+    next(false)
+  }
+})
+
+function handleBeforeUnload(e) {
+  if (hasUnsavedChanges.value) {
+    e.preventDefault()
+    e.returnValue = ''
+  }
+}
 
 watch(() => appStore.theme, async (newTheme) => {
   loadHighlightTheme(newTheme)
@@ -542,6 +670,9 @@ watch(() => appStore.theme, async (newTheme) => {
   // 使用负边距抵消父容器的 padding，让 header 占满宽度
   margin: -20px;
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 100px); // 填充父容器高度，让编辑器占更多空间
 
   .page-header {
     display: flex;
@@ -556,6 +687,7 @@ watch(() => appStore.theme, async (newTheme) => {
     top: -20px; // 调整为负值，紧贴顶部
     z-index: 100;
     transition: box-shadow 0.3s;
+    flex-shrink: 0;
 
     // 滚动时增强阴影效果
     &:hover {
@@ -604,22 +736,65 @@ watch(() => appStore.theme, async (newTheme) => {
     }
   }
 
+  .edit-form {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .meta-row {
+    display: flex;
+    gap: 16px;
+
+    .meta-item {
+      flex: 1;
+      :deep(.el-form-item__content) {
+        width: 100%;
+      }
+    }
+  }
+
+  .editor-form-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    :deep(.el-form-item__content) {
+      flex: 1;
+      overflow: hidden;
+    }
+  }
+
   .editor-container {
     width: 100%;
     border: 1px solid var(--el-border-color);
     border-radius: 4px;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
   }
 
   .editor-toolbar {
     padding: 8px;
     background: var(--el-fill-color-light);
     border-bottom: 1px solid var(--el-border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+
+    .fullscreen-btn {
+      margin-left: auto;
+    }
   }
 
   .editor-main {
     display: flex;
-    height: 500px;
+    flex: 1;
+    min-height: 0; // flexbox min-height 重置
   }
 
   .editor-textarea {
@@ -661,6 +836,34 @@ watch(() => appStore.theme, async (newTheme) => {
       font-size: 12px;
       color: var(--el-text-color-secondary);
       white-space: nowrap;
+    }
+  }
+
+  // 全屏模式：遮盖整个视图，只显示标题栏和编辑器
+  &.is-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    background: var(--el-bg-color);
+    padding: 20px;
+    margin: 0;
+    height: 100vh;
+
+    .page-header {
+      margin: -20px -20px 16px -20px;
+      top: 0;
+    }
+
+    .editor-main {
+      .editor-textarea {
+        flex: 1;
+      }
+      .editor-preview {
+        flex: 1;
+      }
     }
   }
 }
