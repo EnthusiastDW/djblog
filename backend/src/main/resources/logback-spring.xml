@@ -80,8 +80,10 @@
 <!--    <logger name="com.baomidou.mybatisplus" level="DEBUG"/>-->
     
     <!-- 第三方框架日志级别控制 -->
-    <logger name="org.springframework" level="WARN"/>
+<!--    <logger name="org.springframework" level="WARN"/>-->
     <logger name="org.hibernate" level="WARN"/>
     <logger name="io.undertow" level="WARN"/>
-    
+    <logger name="org.springframework.security" level="TRACE" additivity="false">
+        <appender-ref ref="Console" />
+    </logger>
 </configuration>

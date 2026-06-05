@@ -1,6 +1,8 @@
 package site.dengwei.blog.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +30,7 @@ import java.util.Map;
  * @author dengwei
  * @since 2025/9/7 10:10
  */
+@Tag(name = "Auth", description = "用户认证 — 登录、注册、登出、初始密码验证")
 @Slf4j
 @RequestMapping("/auth")
 @RestController
@@ -44,6 +47,7 @@ public class AuthController {
      * @param loginRequest 登录请求
      * @return 认证响应
      */
+    @Operation(summary = "用户登录", description = "使用用户名和密码登录，返回 JWT Token")
     @PostMapping("/login")
     public Response<AuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
         log.info("用户尝试登录: {}", loginRequest.getUsername());
@@ -75,6 +79,7 @@ public class AuthController {
      *
      * @return 操作结果
      */
+    @Operation(summary = "用户登出", description = "使当前登录会话失效")
     @PostMapping("/logout")
     public Response<String> logout() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -90,6 +95,7 @@ public class AuthController {
      * @param registerRequest 注册请求
      * @return 认证响应
      */
+    @Operation(summary = "用户注册", description = "仅当系统中无用户时可注册，注册后成为管理员")
     @PostMapping("/register")
     public Response<AuthResponse> register(@Valid @RequestBody RegisterRequest registerRequest) {
         log.info("收到用户注册请求: {}", registerRequest.getUsername());
@@ -121,6 +127,7 @@ public class AuthController {
      *
      * @return 系统状态信息
      */
+    @Operation(summary = "检查系统用户状态", description = "判断系统是否已有管理员用户，前端据此决定显示登录还是注册页面")
     @GetMapping("/has-user")
     public Response<Map<String, Object>> hasUser() {
         long userCount = userService.count();
@@ -136,6 +143,7 @@ public class AuthController {
      * @param request 包含初始密码的请求
      * @return 验证结果
      */
+    @Operation(summary = "验证初始密码", description = "首次启动时系统生成随机密码，此接口用于验证该密码后进入注册流程")
     @PostMapping("/verify-initial-password")
     public Response<Map<String, Object>> verifyInitialPassword(@RequestBody Map<String, String> request) {
         String password = request.get("password");

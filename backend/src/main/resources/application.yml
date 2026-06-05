@@ -39,8 +39,11 @@ mybatis-plus:
 # Springdoc OpenAPI 通用配置
 springdoc:
   packages-to-scan: site.dengwei.blog.controller
+  api-docs:
+    path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
+    enabled: true
 
 # 平台发布凭据（从环境变量读取，避免明文存储）
 platform:
