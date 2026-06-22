@@ -26,8 +26,7 @@ import site.dengwei.blog.mapper.CategoryMapper;
 import site.dengwei.blog.mapper.PostMapper;
 import site.dengwei.blog.mapper.TagMapper;
 import site.dengwei.blog.mapper.UserMapper;
-import site.dengwei.blog.service.AiSlugService;
-import site.dengwei.blog.service.AiSummaryService;
+import site.dengwei.blog.service.AiService;
 import site.dengwei.blog.service.PostService;
 import site.dengwei.blog.entity.PostPlatformSync;
 import site.dengwei.blog.enums.PlatformSyncStatus;
@@ -55,9 +54,8 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     private final UserMapper userMapper;
     private final CategoryMapper categoryMapper;
     private final TagMapper tagMapper;
-    private final AiSlugService aiSlugService;
+    private final AiService aiService;
     private final PostTagService postTagService;
-    private final AiSummaryService aiSummaryService;
     private final PlatformSyncOrchestrator platformSyncOrchestrator;
     private final PostPlatformSyncMapper postPlatformSyncMapper;
 
@@ -479,8 +477,16 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         }
         post.setTitle(request.getTitle());
         post.setContent(request.getContent());
-        // 只有在首次发布时才生成 slug
-        post.setSlug(processSlug(post, request.getTitle(), status));
+        // slug 优先使用请求中传入的值（前端手动输入或 AI 预生成），只有发布时无 slug 才调用 AI
+        if (StringUtils.hasText(request.getSlug())) {
+            String slug = request.getSlug().trim().toLowerCase()
+                    .replaceAll("[^a-z0-9\\-_]", "-")
+                    .replaceAll("-+", "-")
+                    .replaceAll("^-|-$", "");
+            post.setSlug(ensureUniqueSlug(slug, request.getId()));
+        } else {
+            post.setSlug(processSlug(post, request.getTitle(), status));
+        }
         post.setSummary(request.getSummary());
         post.setCoverImage(request.getCoverImage());
         post.setCategoryId(request.getCategoryId());
@@ -528,7 +534,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         }
         
         // 首次发布时生成 slug
-        String baseSlug = aiSlugService.generateSlug(title);
+        String baseSlug = aiService.generateSlug(title);
         return ensureUniqueSlug(baseSlug, existingPost.getId());
     }
     
@@ -597,7 +603,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
                 // 3. 生成或处理 slug
                 String slug = postReq.getSlug();
                 if (slug == null || slug.isEmpty()) {
-                    slug = aiSlugService.generateSlug(postReq.getTitle());
+                    slug = aiService.generateSlug(postReq.getTitle());
                 }
                 // 确保 slug 唯一
                 slug = ensureUniqueSlug(slug, null);
@@ -613,7 +619,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
                 post.setSlug(slug);
                 post.setContent(postReq.getContent());
                 post.setSummary(postReq.getSummary() != null ? postReq.getSummary() : 
-                    aiSummaryService.generateSummary(postReq.getTitle(), postReq.getContent(), 200));
+                    aiService.generateSummary(postReq.getTitle(), postReq.getContent(), 200));
                 post.setCoverImage(postReq.getCoverImage());
                 post.setStatus(PostStatus.PUBLISHED);
                 post.setAuthorId(userId);

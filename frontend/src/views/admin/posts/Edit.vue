@@ -53,13 +53,25 @@
       <el-form-item label="标题" prop="title">
         <el-input v-model="form.title" placeholder="请输入文章标题" />
       </el-form-item>
+
+      <el-form-item label="Slug" prop="slug" v-show="!fullscreen">
+        <el-input v-model="form.slug" placeholder="URL友好别名，如 my-awesome-post">
+          <template #append>
+            <el-button
+              :loading="aiGenerating"
+              :disabled="!form.title || !form.content"
+              @click="handleGenerateSlugAndSummary"
+            >
+              <el-icon><MagicStick /></el-icon>
+              AI生成
+            </el-button>
+          </template>
+        </el-input>
+        <div class="slug-hint">发布后将作为文章链接的一部分，建议使用英文或拼音，发布后不建议修改</div>
+      </el-form-item>
       
       <el-form-item label="摘要" prop="summary" v-show="!fullscreen">
         <el-input v-model="form.summary" type="textarea" :rows="2" placeholder="请输入文章摘要" />
-        <el-button type="primary" link :loading="summaryLoading" @click="handleGenerateSummary">
-          <el-icon><MagicStick /></el-icon>
-          AI生成
-        </el-button>
       </el-form-item>
 
       <!-- 分类、标签、封面紧凑排列 -->
@@ -181,7 +193,7 @@ const categoryTree = ref([])
 const tags = ref([])
 const categoryLoading = ref(false)
 const tagLoading = ref(false)
-const summaryLoading = ref(false)
+const aiGenerating = ref(false)
 const categoryDialogVisible = ref(false)
 
 // 平台同步相关
@@ -204,6 +216,7 @@ const isEdit = computed(() => !!route.params.id)
 const form = reactive({
   id: null,
   title: '',
+  slug: '',
   summary: '',
   content: '',
   categoryId: null,
@@ -220,6 +233,7 @@ function takeFormSnapshot() {
 function formMatchesSnapshot() {
   if (!initialForm.value) return true
   return initialForm.value.title === form.title
+    && initialForm.value.slug === form.slug
     && initialForm.value.summary === form.summary
     && initialForm.value.content === form.content
     && initialForm.value.categoryId === form.categoryId
@@ -276,6 +290,10 @@ function handleBack() {
 
 const rules = {
   title: [{ required: true, message: '请输入文章标题', trigger: 'blur' }],
+  slug: [
+    { required: true, message: '请输入 Slug', trigger: 'blur' },
+    { pattern: /^[a-z0-9]+(?:-[a-z0-9]+)*$/, message: 'Slug 格式错误：仅支持小写字母、数字和连字符', trigger: 'blur' }
+  ],
   content: [{ required: true, message: '请输入文章内容', trigger: 'blur' }]
 }
 
@@ -396,21 +414,30 @@ async function handleTagChange(values) {
   }
 }
 
-async function handleGenerateSummary() {
+async function handleGenerateSlugAndSummary() {
+  if (!form.title) {
+    ElMessage.warning('请先输入文章标题')
+    return
+  }
   if (!form.content) {
     ElMessage.warning('请先输入文章内容')
     return
   }
-  summaryLoading.value = true
+  aiGenerating.value = true
   try {
-    const res = await postApi.generateSummary(form.title, form.content, 200)
-    form.summary = res.data
-    ElMessage.success('摘要生成成功')
+    const res = await postApi.generateSlugAndSummary(form.title, form.content)
+    if (res.data) {
+      if (res.data.slug) form.slug = res.data.slug
+      if (res.data.summary) form.summary = res.data.summary
+      ElMessage.success(
+        [res.data.slug && 'Slug', res.data.summary && '摘要'].filter(Boolean).join('+') + ' 生成成功'
+      )
+    }
   } catch (e) {
-    console.error('生成摘要失败', e)
-    ElMessage.error('生成摘要失败')
+    console.error('AI 生成失败', e)
+    ElMessage.error('AI 生成失败，请重试')
   } finally {
-    summaryLoading.value = false
+    aiGenerating.value = false
   }
 }
 
@@ -422,6 +449,7 @@ async function fetchPost() {
     const post = res.data
     form.id = post.id
     form.title = post.title
+    form.slug = post.slug || ''
     form.summary = post.summary || ''
     form.content = post.content || ''
     form.categoryId = post.categoryId
@@ -595,6 +623,7 @@ watch(() => route.params.id, async (newId) => {
   // 重置表单
   form.id = null
   form.title = ''
+  form.slug = ''
   form.summary = ''
   form.content = ''
   form.categoryId = null
@@ -757,6 +786,13 @@ watch(() => appStore.theme, async (newTheme) => {
         width: 100%;
       }
     }
+  }
+
+  .slug-hint {
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+    margin-top: 4px;
+    line-height: 1.4;
   }
 
   .editor-form-item {

@@ -96,6 +96,11 @@ export const postApi = {
     return api.post('/post/summary/generate', { title, content, maxLength })
   },
 
+  // AI合并生成 slug + 摘要（一次请求，优化速度）
+  generateSlugAndSummary(title, content) {
+    return api.post('/post/ai/generate', { title, content })
+  },
+
   // 获取总阅读量
   getTotalViewCount() {
     return api.get('/post/stats/views')

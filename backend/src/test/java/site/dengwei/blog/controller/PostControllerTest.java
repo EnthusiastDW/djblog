@@ -9,7 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import site.dengwei.blog.dto.PostListDTO;
 import site.dengwei.blog.entity.Post;
-import site.dengwei.blog.service.AiSummaryService;
+import site.dengwei.blog.service.AiService;
 import site.dengwei.blog.service.PostService;
 import site.dengwei.blog.dto.Response;
 
@@ -31,7 +31,7 @@ class PostControllerTest {
     private PostService postService;
 
     @Mock
-    private AiSummaryService aiSummaryService;
+    private AiService aiService;
 
     @InjectMocks
     private PostController postController;

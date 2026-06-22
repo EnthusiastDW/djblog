@@ -17,7 +17,7 @@ import site.dengwei.blog.dto.request.*;
 import site.dengwei.blog.entity.Post;
 import site.dengwei.blog.enums.PostStatus;
 import site.dengwei.blog.entity.PostPlatformSync;
-import site.dengwei.blog.service.AiSummaryService;
+import site.dengwei.blog.service.AiService;
 import site.dengwei.blog.service.PostPlatformSyncService;
 import site.dengwei.blog.service.PostService;
 import site.dengwei.blog.service.PostVisitStatisticsService;
@@ -43,7 +43,7 @@ import java.util.Map;
 public class PostController {
 
     private final PostService postService;
-    private final AiSummaryService aiSummaryService;
+    private final AiService aiService;
     private final PostVisitStatisticsService postVisitStatisticsService;
     private final PlatformSyncOrchestrator platformSyncOrchestrator;
     private final PostPlatformSyncService postPlatformSyncService;
@@ -242,12 +242,31 @@ public class PostController {
     @Operation(summary = "AI生成摘要", description = "调用 AI 模型根据文章标题和内容生成摘要")
     @PostMapping("/summary/generate")
     public Response<String> generateSummary(@RequestBody SummaryRequest request) {
-        String summary = aiSummaryService.generateSummary(
+        String summary = aiService.generateSummary(
                 request.getTitle(),
                 request.getContent(),
                 request.getMaxLength() != null ? request.getMaxLength() : 200
         );
         return Response.success(summary);
+    }
+
+    /**
+     * AI 合并生成 slug 和摘要（一次请求，优化发布速度）
+     */
+    @Operation(summary = "AI合并生成Slug和摘要", description = "一次 AI 调用同时生成 URL slug 和文章摘要，减少等待时间")
+    @PostMapping("/ai/generate")
+    public Response<Map<String, String>> generateSlugAndSummary(@RequestBody AiGenerateRequest request) {
+        try {
+            Map<String, String> result = aiService.generateSlugAndSummary(
+                    request.getTitle(),
+                    request.getContent()
+            );
+            return Response.success(result);
+        } catch (IllegalArgumentException e) {
+            return Response.errorT(e.getMessage());
+        } catch (Exception e) {
+            return Response.errorT("AI 生成失败：" + e.getMessage());
+        }
     }
 
     @Operation(summary = "总浏览量统计", description = "获取全站文章总浏览量")
@@ -323,5 +342,14 @@ public class PostController {
         private String title;
         private String content;
         private Integer maxLength;
+    }
+
+    /**
+     * AI 合并生成 slug + 摘要请求
+     */
+    @lombok.Data
+    public static class AiGenerateRequest {
+        private String title;
+        private String content;
     }
 }
