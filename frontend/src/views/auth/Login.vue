@@ -41,7 +41,7 @@
             size="large"
             class="login-btn"
             :loading="loading"
-            @click="handleVerifyInitialPassword"
+            native-type="submit"
           >
             验证并继续
           </el-button>
@@ -108,7 +108,7 @@
             size="large"
             class="login-btn"
             :loading="loading"
-            @click="handleRegister"
+            native-type="submit"
           >
             完成注册
           </el-button>
@@ -148,7 +148,7 @@
             size="large"
             class="login-btn"
             :loading="loading"
-            @click="handleLogin"
+            native-type="submit"
           >
             登录
           </el-button>
@@ -267,6 +267,7 @@ async function checkSystemStatus() {
 
 // 验证初始密码
 async function handleVerifyInitialPassword() {
+  if (loading.value) return
   const valid = await initialFormRef.value.validate().catch(() => false)
   if (!valid) return
 
@@ -277,6 +278,7 @@ async function handleVerifyInitialPassword() {
     initialPasswordVerified.value = true
   } catch (e) {
     console.error('初始密码验证失败', e)
+    ElMessage.error(e.response?.data?.message || e.message || '验证失败')
   } finally {
     loading.value = false
   }
@@ -284,6 +286,7 @@ async function handleVerifyInitialPassword() {
 
 // 处理注册
 async function handleRegister() {
+  if (loading.value) return
   const valid = await registerFormRef.value.validate().catch(() => false)
   if (!valid) return
 
@@ -298,6 +301,7 @@ async function handleRegister() {
     router.push('/')
   } catch (e) {
     console.error('注册失败', e)
+    ElMessage.error(e.response?.data?.message || e.message || '注册失败')
   } finally {
     loading.value = false
   }
@@ -305,6 +309,7 @@ async function handleRegister() {
 
 // 处理登录
 async function handleLogin() {
+  if (loading.value) return
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
 
@@ -316,6 +321,7 @@ async function handleLogin() {
     router.push(redirect)
   } catch (e) {
     console.error('登录失败', e)
+    ElMessage.error(e.response?.data?.message || e.message || '登录失败')
   } finally {
     loading.value = false
   }

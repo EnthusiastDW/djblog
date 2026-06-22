@@ -463,6 +463,8 @@ async function handleSaveDraft() {
       form.id = res.data
       console.log('[Save Draft] New draft created with ID:', form.id)
     }
+    // 更新同步平台列表（新建草稿后让同步选项可见）
+    await fetchSyncStatus()
     lastSaveTime.value = new Date()
     takeFormSnapshot()
     ElMessage.success('草稿已保存')
@@ -487,6 +489,8 @@ async function autoSaveDraft() {
       form.id = res.data
       console.log('[Auto Save] New draft created with ID:', form.id)
     }
+    // 更新同步平台列表（新建草稿后让同步选项可见）
+    await fetchSyncStatus()
     lastSaveTime.value = new Date()
     console.log('[Auto Save] Draft saved at', lastSaveTime.value)
   } catch (e) {

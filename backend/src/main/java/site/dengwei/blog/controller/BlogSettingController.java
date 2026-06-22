@@ -18,12 +18,17 @@ public class BlogSettingController {
     
     private final BlogSettingService blogSettingService;
     
-    @Operation(summary = "获取系统设置", description = "获取博客的系统配置信息，如背景图片、透明度等")
+    @Operation(summary = "获取系统设置", description = "获取博客的系统配置信息，如背景图片(支持多图轮播)、透明度等")
     @GetMapping
-    public Response<Map<String, String>> getSettings() {
-        Map<String, String> settings = new HashMap<>();
-        settings.put("bgImage", blogSettingService.getValue("bg_image") != null ? blogSettingService.getValue("bg_image") : "");
+    public Response<Map<String, Object>> getSettings() {
+        Map<String, Object> settings = new HashMap<>();
+        String bgImage = blogSettingService.getValue("bg_image");
+        settings.put("bgImage", bgImage != null ? bgImage : "");
         settings.put("bgOpacity", blogSettingService.getValue("bg_opacity") != null ? blogSettingService.getValue("bg_opacity") : "0.3");
+        // 多图轮播支持
+        String bgImagesJson = blogSettingService.getValue("bg_images");
+        settings.put("bgImages", bgImagesJson != null ? bgImagesJson : "[]");
+        settings.put("bgCarouselInterval", blogSettingService.getValue("bg_carousel_interval") != null ? blogSettingService.getValue("bg_carousel_interval") : "5");
         return Response.success(settings);
     }
     
@@ -35,6 +40,13 @@ public class BlogSettingController {
         }
         if (settings.containsKey("bgOpacity")) {
             blogSettingService.setValue("bg_opacity", settings.get("bgOpacity"));
+        }
+        // 多图轮播支持
+        if (settings.containsKey("bgImages")) {
+            blogSettingService.setValue("bg_images", settings.get("bgImages"));
+        }
+        if (settings.containsKey("bgCarouselInterval")) {
+            blogSettingService.setValue("bg_carousel_interval", settings.get("bgCarouselInterval"));
         }
         return Response.success(true);
     }

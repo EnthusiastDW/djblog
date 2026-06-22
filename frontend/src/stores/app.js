@@ -31,8 +31,14 @@ export const useAppStore = defineStore('app', () => {
   const leftSidebarVisible = ref(false)
   const bgImage = ref(localStorage.getItem('bgImage') || '')
   const bgOpacity = ref(parseFloat(localStorage.getItem('bgOpacity')) || 0.2)
+  // 多图轮播支持
+  const bgImages = ref(JSON.parse(localStorage.getItem('bgImages') || '[]'))
+  const bgCarouselInterval = ref(parseInt(localStorage.getItem('bgCarouselInterval')) || 5)
   const todayVisitors = ref(0)
   const totalVisitors = ref(0)
+
+  // 背景图片轮播是否激活（有2张及以上图片时自动激活）
+  const carouselActive = computed(() => bgImages.value.length >= 2)
 
   watch(bgImage, (newBgImage) => {
     localStorage.setItem('bgImage', newBgImage)
@@ -40,6 +46,14 @@ export const useAppStore = defineStore('app', () => {
 
   watch(bgOpacity, (newBgOpacity) => {
     localStorage.setItem('bgOpacity', newBgOpacity.toString())
+  })
+
+  watch(bgImages, (newBgImages) => {
+    localStorage.setItem('bgImages', JSON.stringify(newBgImages))
+  }, { deep: true })
+
+  watch(bgCarouselInterval, (newInterval) => {
+    localStorage.setItem('bgCarouselInterval', newInterval.toString())
   })
 
   function toggleTheme() {
@@ -65,12 +79,18 @@ export const useAppStore = defineStore('app', () => {
     leftSidebarVisible.value = !leftSidebarVisible.value
   }
 
-  function setBackground(image, opacity) {
+  function setBackground(image, opacity, images, interval) {
     if (image !== undefined) {
       bgImage.value = image
     }
     if (opacity !== undefined) {
       bgOpacity.value = opacity
+    }
+    if (images !== undefined) {
+      bgImages.value = images
+    }
+    if (interval !== undefined) {
+      bgCarouselInterval.value = interval
     }
   }
 
@@ -83,6 +103,18 @@ export const useAppStore = defineStore('app', () => {
         }
         if (res.data.bgOpacity !== undefined && res.data.bgOpacity !== null) {
           bgOpacity.value = parseFloat(res.data.bgOpacity)
+        }
+        // 多图轮播
+        if (res.data.bgImages) {
+          try {
+            const images = typeof res.data.bgImages === 'string' ? JSON.parse(res.data.bgImages) : res.data.bgImages
+            bgImages.value = Array.isArray(images) ? images : []
+          } catch (e) {
+            bgImages.value = []
+          }
+        }
+        if (res.data.bgCarouselInterval !== undefined && res.data.bgCarouselInterval !== null) {
+          bgCarouselInterval.value = parseInt(res.data.bgCarouselInterval) || 5
         }
       }
     } catch (e) {
@@ -107,6 +139,9 @@ export const useAppStore = defineStore('app', () => {
     leftSidebarVisible,
     bgImage,
     bgOpacity,
+    bgImages,
+    bgCarouselInterval,
+    carouselActive,
     todayVisitors,
     totalVisitors,
     toggleTheme,

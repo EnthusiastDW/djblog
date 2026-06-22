@@ -1,6 +1,22 @@
 <template>
   <div class="front-layout">
-    <div class="bg-image" :style="bgStyle"></div>
+    <!-- 动态注入轮播动画 keyframes -->
+    <component :is="'style'" v-if="appStore.carouselActive">
+      {{ carouselKeyframes }}
+    </component>
+
+    <!-- 单图模式（兼容旧版 bgImage） -->
+    <div v-if="!appStore.carouselActive" class="bg-image" :style="bgStyle"></div>
+
+    <!-- 多图轮播模式 -->
+    <div
+      v-for="(img, idx) in appStore.bgImages"
+      :key="'carousel-' + idx"
+      v-show="appStore.carouselActive"
+      class="bg-carousel-layer"
+      :style="carouselLayerStyle(idx, img)"
+    ></div>
+
     <div class="bg-overlay" :style="{ opacity: appStore.bgOpacity }"></div>
     <header class="front-header">
       <app-header />
@@ -43,6 +59,40 @@ import { useAppStore } from '@/stores/app'
 
 const appStore = useAppStore()
 const isMobile = useMediaQuery('(max-width: 992px)')
+
+// ===== 多图轮播 =====
+
+/** 动态生成 crossfade 轮播的 @keyframes */
+const carouselKeyframes = computed(() => {
+  if (!appStore.carouselActive) return ''
+  const count = appStore.bgImages.length
+  const interval = appStore.bgCarouselInterval
+  const totalDuration = count * interval
+  // 淡入/淡出各占 1 秒，换算为百分比
+  const fadeInEnd = ((1 / totalDuration) * 100).toFixed(1)
+  const fadeOutStart = (100 - parseFloat(fadeInEnd)).toFixed(1)
+
+  return `
+@keyframes bgCarouselFade {
+  0%   { opacity: 0; }
+  ${fadeInEnd}%  { opacity: 1; }
+  ${fadeOutStart}% { opacity: 1; }
+  100% { opacity: 0; }
+}`
+})
+
+/** 计算单个轮播图层的 CSS */
+function carouselLayerStyle(index, imageUrl) {
+  const count = appStore.bgImages.length
+  const interval = appStore.bgCarouselInterval
+  const totalDuration = count * interval
+
+  return {
+    backgroundImage: `url("${imageUrl}")`,
+    animation: `bgCarouselFade ${totalDuration}s infinite`,
+    animationDelay: `${index * interval}s`
+  }
+}
 
 function handleToggleSidebar() {
   appStore.toggleSidebar()
@@ -109,6 +159,22 @@ onMounted(() => {
   background-position: center;
   background-repeat: no-repeat;
   background-color: #f5f7fa;
+}
+
+/* 多图轮播层 */
+.bg-carousel-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -2;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #f5f7fa;
+  opacity: 0;
+  will-change: opacity;
 }
 
 .bg-overlay {
@@ -212,6 +278,10 @@ onMounted(() => {
 
 // 暗色主题支持
 .dark .bg-image {
+  background-color: #141414 !important;
+}
+
+.dark .bg-carousel-layer {
   background-color: #141414 !important;
 }
 
