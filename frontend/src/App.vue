@@ -20,11 +20,7 @@ async function fetchBlogUser() {
 
 // 更新浏览器标题
 function updateTitle() {
-  if (blogUser.value) {
-    document.title = `${blogUser.value.username}的博客`
-  } else {
-    document.title = '首页'
-  }
+  document.title = '心灵之窗'
 }
 
 onMounted(() => {

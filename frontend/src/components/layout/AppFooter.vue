@@ -36,7 +36,7 @@ import { useAppStore } from '@/stores/app'
 const appStore = useAppStore()
 
 const currentYear = computed(() => new Date().getFullYear())
-const icpNumber = import.meta.env.VITE_ICP_NUMBER || '蜀ICP备2026015075号'
+const icpNumber = import.meta.env.VITE_ICP_NUMBER || '蜀ICP备2026015075号-1'
 
 const todayVisitors = computed(() => appStore.todayVisitors)
 const totalVisitors = computed(() => appStore.totalVisitors)
