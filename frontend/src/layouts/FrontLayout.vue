@@ -56,6 +56,7 @@ import AppLeftSidebar from '@/components/layout/AppLeftSidebar.vue'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import { useAppStore } from '@/stores/app'
+import { initPresence } from '@/composables/usePresence'
 
 const appStore = useAppStore()
 const isMobile = useMediaQuery('(max-width: 992px)')
@@ -137,6 +138,7 @@ watch(() => appStore.bgOpacity, (newOpacity) => {
 
 onMounted(() => {
   appStore.fetchSettings()
+  initPresence()
 })
 </script>
 

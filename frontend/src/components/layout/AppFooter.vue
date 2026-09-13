@@ -15,6 +15,11 @@
         </p>
       </div>
       <div class="footer-stats">
+        <span class="stat-item online-count">
+          <span class="stat-value">{{ presenceStore.onlineCount > 0 ? presenceStore.onlineCount : '—' }}</span>
+          <span class="stat-label">人在线</span>
+        </span>
+        <span class="stat-divider">|</span>
         <span class="stat-item">
           <span class="stat-value">{{ todayVisitors }}</span>
           <span class="stat-label">今日</span>
@@ -32,8 +37,10 @@
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useAppStore } from '@/stores/app'
+import { usePresenceStore } from '@/stores/presence'
 
 const appStore = useAppStore()
+const presenceStore = usePresenceStore()
 
 const currentYear = computed(() => new Date().getFullYear())
 const icpNumber = import.meta.env.VITE_ICP_NUMBER || '蜀ICP备2026015075号-1'
