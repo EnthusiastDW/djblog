@@ -53,7 +53,7 @@ function connect() {
     heartbeatIncoming: 30000,
     heartbeatOutgoing: 30000,
     reconnectDelay: 0,
-    debug: isDev ? (str) => console.log('[STOMP]', str) : undefined,
+    debug: isDev ? (str) => console.log('[STOMP]', str) : () => {},
     onConnect: (frame) => {
       if (isDev) {
         console.log('[Presence] Connected:', frame)
